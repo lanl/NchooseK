@@ -71,7 +71,7 @@ class Block(object):
             return '%s.%s' % (self._unique_id, key)
         raise KeyError(key)
 
-class Env(object):
+class Environment(object):
     'A namespace for a set of related NchooseK operations.'
 
     def __init__(self):
@@ -80,8 +80,8 @@ class Env(object):
         self._port_names = set()  # All port names within this environment
         self._next_id = 1         # Next available unique ID for an object
 
-    def new_port(self, port_name):
-        'Define a new, environment-global port name.  Return the name unmodified.'
+    def register_port(self, port_name):
+        'Register a new, environment-global port name.  Return the name unmodified.'
         if port_name in self._port_names:
             raise DuplicatePortError(port_name)
         self._port_names.add(port_name)
