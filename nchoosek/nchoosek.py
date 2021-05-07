@@ -23,8 +23,12 @@ class Constraint(object):
     'Representation of a constraint (k of n ports are True).'
 
     def __init__(self, port_list, num_true):
-        self.port_list = port_list     # List of ports, can include duplicates
-        self.num_true = set(num_true)  # Set of allowable True counts
+        self.port_list = list(port_list)  # List of ports, can include duplicates
+        self.num_true = set(num_true)     # Set of allowable True counts
+
+    def __str__(self):
+        'Return a constraint as a string.'
+        return '%s choose %s' % (self.port_list, self.num_true)
 
 class Block(object):
     'Base class for user-defined NchooseK types.'
@@ -123,3 +127,9 @@ class Env(object):
             if gp not in self._port_names:
                 raise UnknownPortError(None, gp)
         self._constraints.append(Constraint(gps, vals))
+
+    def __str__(self):
+        'Return an environment as a single string.'
+        pstr = ', '.join(sorted(self._port_names))
+        cstr = ', '.join([str(c) for c in self._constraints])
+        return 'Ports {%s} with constraints {%s}' % (pstr, cstr)
