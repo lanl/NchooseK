@@ -22,7 +22,7 @@ class DuplicatePortError(Exception):
 class Block(object):
     'Base class for user-defined NchooseK types.'
 
-    def __init__(self):
+    def __init__(self, bindings=None):
         # Assign the object an ID that's unique to the parent environment.
         env = self.env
         self._unique_id = '%s%d' % (self._type_name, env._next_id)
@@ -37,6 +37,14 @@ class Block(object):
                 raise DuplicatePortError(dups.pop())
             env._port_names |= gps_set
             env._constraints.append((gps, vals))
+
+        # If a list of port bindings was provided, equate those to the
+        # global port names.
+        if bindings != None:
+            if len(bindings) != len(self.port_names):
+                raise ValueError('%d binding(s) were provided for %d port(s)' % (len(bindings), len(self.port_names)))
+            for gp1, gp2 in zip(bindings, [self[p] for p in self.port_names]):
+                env.same(gp1, gp2)
 
     def __getattr__(self, attr):
         'Given a type-local port name, return an environment-global port name.'
@@ -64,6 +72,7 @@ class Env(object):
         if port_name in self._port_names:
             raise DuplicatePortError(port_name)
         self._port_names.add(port_name)
+        return port_name
 
     def new_type(self, name, port_names, constraints=[]):
         '''Define a new data type, characterized by a type name, a set of
@@ -78,7 +87,7 @@ class Env(object):
         # Derive a type from Block and return it.
         return type(name, (Block,), {
             '_type_name': name,
-            'port_names': port_set,
+            'port_names': list(port_names),
             'type_constraints': constraints,
             'env': self})
 
