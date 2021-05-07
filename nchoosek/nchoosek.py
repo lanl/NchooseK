@@ -133,3 +133,13 @@ class Environment(object):
         pstr = ', '.join(sorted(self._port_names))
         cstr = ', '.join([str(c) for c in self._constraints])
         return 'Ports {%s} with constraints {%s}' % (pstr, cstr)
+
+    def ports(self):
+        'Return a set of all port names in the environment.'
+        return self._port_names
+
+    def constraints(self):
+        'Return a set of all constraints in the environment.'
+        # Although we store constraints as a list, we return them as a
+        # set to reinforce that the order is meaningless.
+        return set(self._constraints)
