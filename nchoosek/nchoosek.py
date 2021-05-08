@@ -40,9 +40,9 @@ class Block(object):
         env._next_id += 1
 
         # Notify our parent environment of our constraints and our port names.
-        if self.type_constraint != None:
-            lps = self.type_constraint.port_list
-            vals = self.type_constraint.num_true
+        if self._constraint != None:
+            lps = self._constraint.port_list
+            vals = self._constraint.num_true
             gps = ['%s.%s' % (self._unique_id, lp) for lp in lps]
             gps_set = set(gps)
             dups = env._port_names & gps_set
@@ -54,20 +54,20 @@ class Block(object):
         # If a list of port bindings was provided, equate those to the
         # global port names.
         if bindings != None:
-            if len(bindings) != len(self.port_list):
-                raise ValueError('%d binding(s) were provided for %d port(s)' % (len(bindings), len(self.port_list)))
-            for gp1, gp2 in zip(bindings, [self[p] for p in self.port_list]):
+            if len(bindings) != len(self._port_list):
+                raise ValueError('%d binding(s) were provided for %d port(s)' % (len(bindings), len(self._port_list)))
+            for gp1, gp2 in zip(bindings, [self[p] for p in self._port_list]):
                 env.same(gp1, gp2)
 
     def __getattr__(self, attr):
         'Given a type-local port name, return an environment-global port name.'
-        if attr in self.port_list:
+        if attr in self._port_list:
             return '%s.%s' % (self._unique_id, attr)
         raise AttributeError(attr)
 
     def __getitem__(self, key):
         'Given a type-local port name, return an environment-global port name.'
-        if key in self.port_list:
+        if key in self._port_list:
             return '%s.%s' % (self._unique_id, key)
         raise KeyError(key)
 
@@ -100,8 +100,8 @@ class Environment(object):
         # Derive a type from Block and return it.
         return type(name, (Block,), {
             '_type_name': name,
-            'port_list': list(port_list),
-            'type_constraint': constraint,
+            '_port_list': list(port_list),
+            '_constraint': constraint,
             'env': self})
 
     def same(self, gp1, gp2):
