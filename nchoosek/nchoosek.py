@@ -16,8 +16,12 @@ class UnknownPortError(Exception):
 class DuplicatePortError(Exception):
     'A supposedly new port already exists.'
 
-    def __init__(self, port_name):
-        super().__init__('Port "%s" already exists in the environment' % port_name)
+    def __init__(self, port_name, block_name=None):
+        if block_name == None:
+            msg = 'Port "%s" already exists in the environment' % port_name
+        else:
+            msg = 'Port "%s" appears more than once in blocks of type "%s"' % (port_name, block_name)
+        super().__init__(msg)
 
 class Constraint(object):
     'Representation of a constraint (k of n ports are True).'
@@ -59,6 +63,13 @@ class Block(object):
             for gp1, gp2 in zip(bindings, [self[p] for p in self._port_list]):
                 env.same(gp1, gp2)
 
+    def ports(self, env_globals=False):
+        'Return a list of either local (default) or environment-global port names.'
+        if env_globals:
+            return ['%s.%s' % (self._unique_id, lp) for lp in self._port_list]
+        else:
+            return [lp for lp in self._port_list]
+
     def __getattr__(self, attr):
         'Given a type-local port name, return an environment-global port name.'
         if attr in self._port_list:
@@ -90,8 +101,14 @@ class Environment(object):
     def new_type(self, name, port_list, constraint=None):
         '''Define a new data type, characterized by a type name, a set of
         type-local port names, and a list of constraints.'''
+        # Ensure that the given port names are unique.
+        port_set = set()
+        for lp in port_list:
+            if lp in port_set:
+                raise DuplicatePortError(lp, name)
+            port_set.add(lp)
+
         # Ensure that all constraints reference only known port names.
-        port_set = set(port_list)
         if constraint != None:
             for lp in constraint.port_list:
                 if lp not in port_set:
