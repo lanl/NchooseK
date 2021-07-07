@@ -142,6 +142,20 @@ class Environment(object):
             raise UnknownPortError(None, gp2)
         self._constraints.append(Constraint([gp1, gp2], {1}, soft))
 
+    def minimize(self, gps):
+        'Try to set as few environment-global ports to True as possible.'
+        for p in gps:
+            if p not in self._port_names:
+                raise UnknownPortError(None, p)
+        self._constraints.append(Constraint(gps, {0}, soft=True))
+
+    def maximize(self, gps):
+        'Try to set as mant environment-global ports to True as possible.'
+        for p in gps:
+            if p not in self._port_names:
+                raise UnknownPortError(None, p)
+        self._constraints.append(Constraint(gps, {len(gps)}, soft=True))
+
     def nck(self, gps, vals, soft=False):
         '''Add a new constraint to the environment.  This method accepts
         only environment-global ports, not type-local port names.'''

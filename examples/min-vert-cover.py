@@ -23,8 +23,6 @@ for u, v in [(1, 2),
              (3, 4),
              (4, 6)]:
     env.nck([verts[u - 1], verts[v - 1]], {1, 2})
-
-for v in verts:
-    env.nck(v, {0}, soft=True)
+env.minimize(verts)
 result = z3.solve(env)
 print('Minimum vertex cover: %s' % ' '.join(sorted([v for v, b in result.items() if b], key=int)))
