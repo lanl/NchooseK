@@ -139,7 +139,7 @@ class Environment(object):
 
     def nck(self, gps, vals):
         '''Add a new constraint to the environment.  This method accepts
-        only environment-globsl ports, not type-local port names.'''
+        only environment-global ports, not type-local port names.'''
         for gp in gps:
             if gp not in self._port_names:
                 raise UnknownPortError(None, gp)

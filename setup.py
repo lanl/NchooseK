@@ -27,6 +27,6 @@ setuptools.setup(
                 'optimization'
                 'quantum computing',
                 'quantum annealing'],
-    url = 'https://github.com/lanl/nchoosek',
+    url = 'https://github.com/lanl/NchooseK',
     python_requires='>=3.8',
     packages = setuptools.find_packages())

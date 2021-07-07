@@ -1,1 +1,1 @@
-from nchoosek.nchoosek import *
+from nchoosek.core import *
