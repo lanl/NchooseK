@@ -20,7 +20,7 @@ setuptools.setup(
         'Development Status :: 2 - Pre-Alpha',
         'License :: OSI Approved',
         'Programming Language :: Python :: 3',
-        "Operating System :: OS Independent",
+        'Operating System :: OS Independent',
         'Intended Audience :: Developers'],
     keywords = ['linear programming',
                 'constraint programming',
@@ -28,5 +28,9 @@ setuptools.setup(
                 'quantum computing',
                 'quantum annealing'],
     url = 'https://github.com/lanl/NchooseK',
+    license = 'LICENSE.md',
     python_requires='>=3.8',
+    install_requires = [
+        'z3-solver >= 4.8',
+    ],
     packages = setuptools.find_packages())
