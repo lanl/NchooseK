@@ -26,13 +26,17 @@ class DuplicatePortError(Exception):
 class Constraint(object):
     'Representation of a constraint (k of n ports are True).'
 
-    def __init__(self, port_list, num_true):
+    def __init__(self, port_list, num_true, soft=False):
         self.port_list = list(port_list)  # List of ports, can include duplicates
         self.num_true = set(num_true)     # Set of allowable True counts
+        self.soft = soft                  # true: allow this constraint to be broken
 
     def __str__(self):
         'Return a constraint as a string.'
-        return '%s choose %s' % (self.port_list, self.num_true)
+        msg = '%s choose %s' % (self.port_list, self.num_true)
+        if soft:
+            msg += ' (soft)'
+        return msg
 
 class Block(object):
     'Base class for user-defined NchooseK types.'
@@ -47,13 +51,14 @@ class Block(object):
         if self._constraint != None:
             lps = self._constraint.port_list
             vals = self._constraint.num_true
+            soft = self._constraint.soft
             gps = ['%s.%s' % (self._unique_id, lp) for lp in lps]
             gps_set = set(gps)
             dups = env._port_names & gps_set
             if len(dups) > 0:
                 raise DuplicatePortError(dups.pop())
             env._port_names |= gps_set
-            env._constraints.append(Constraint(gps, vals))
+            env._constraints.append(Constraint(gps, vals, soft))
 
         # If a list of port bindings was provided, equate those to the
         # global port names.
@@ -121,29 +126,29 @@ class Environment(object):
             '_constraint': constraint,
             'env': self})
 
-    def same(self, gp1, gp2):
+    def same(self, gp1, gp2, soft=False):
         'Declare that two environment-global ports must have the same value.'
         if gp1 not in self._port_names:
             raise UnknownPortError(None, gp1)
         if gp2 not in self._port_names:
             raise UnknownPortError(None, gp2)
-        self._constraints.append(Constraint([gp1, gp2], {0, 2}))
+        self._constraints.append(Constraint([gp1, gp2], {0, 2}, soft))
 
-    def different(self, gp1, gp2):
+    def different(self, gp1, gp2, soft=False):
         'Declare that two environment-global ports must have different values.'
         if gp1 not in self._port_names:
             raise UnknownPortError(None, gp1)
         if gp2 not in self._port_names:
             raise UnknownPortError(None, gp2)
-        self._constraints.append(Constraint([gp1, gp2], {1}))
+        self._constraints.append(Constraint([gp1, gp2], {1}, soft))
 
-    def nck(self, gps, vals):
+    def nck(self, gps, vals, soft=False):
         '''Add a new constraint to the environment.  This method accepts
         only environment-global ports, not type-local port names.'''
         for gp in gps:
             if gp not in self._port_names:
                 raise UnknownPortError(None, gp)
-        self._constraints.append(Constraint(gps, vals))
+        self._constraints.append(Constraint(gps, vals, soft))
 
     def __str__(self):
         'Return an environment as a single string.'
