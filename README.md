@@ -12,6 +12,8 @@ Variables can appear multiple times in the first argument.  All instances of a v
 
 A program can—and typically does—specify multiple `nck` constraints.  `nck({A, B, C}, {1}); nck({B, C, D}, {1}); nck({C, D, E}, {1})` dictates that exactly one of {*A*, *B*, *C*}, exactly one of {*B*, *C*, *D*}, and exactly one of {*C*, *D*, *E*} must be True.  Hence, one possible solution sets *A* and *E* True and the rest of the variables False; another possible solution sets only *C* True and the rest False.
 
+Constraints can be either "hard" (the default) or "soft".  Hard constraints must be satisfied for a solution to be valid.  Soft constraints will be satisfied if possible but can be violated if necessary.
+
 That's it!  NchooseK may seem simplistic, but our hypothesis is that it is sufficiently general as to express a wide variety of computational problems yet sufficiently simple as to facilitate implementation across highly disparate computational platforms.
 
 Documentation
