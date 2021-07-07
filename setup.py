@@ -33,4 +33,5 @@ setuptools.setup(
     install_requires = [
         'z3-solver >= 4.8',
     ],
-    packages = setuptools.find_packages())
+    packages = setuptools.find_packages(),
+    scripts = ['bin/tt2nck'])
