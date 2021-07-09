@@ -2,6 +2,8 @@
 # NchooseK top-level definitions #
 ##################################
 
+from nchoosek.solve.bqm import BQMMixin
+
 class UnknownPortError(Exception):
     'An unknown port was referenced.'
 
@@ -23,7 +25,7 @@ class DuplicatePortError(Exception):
             msg = 'Port "%s" appears more than once in blocks of type "%s"' % (port_name, block_name)
         super().__init__(msg)
 
-class Constraint(object):
+class Constraint(BQMMixin):
     'Representation of a constraint (k of n ports are True).'
 
     def __init__(self, port_list, num_true, soft=False):
