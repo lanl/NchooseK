@@ -1,7 +1,8 @@
-##############################
-# Solve for the variables in #
-# an NchooseK environment    #
-##############################
+######################################
+# Use the Z3 Theorem Prover to solve #
+# classically for the variables in   #
+# an NchooseK environment            #
+######################################
 
 import z3
 

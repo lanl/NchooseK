@@ -24,7 +24,7 @@ class BQMMixin(object):
         # Return a truth table containing one column per unique port
         # name plus the per-column name and tally information
         tt = itertools.product(*[[0, 1]]*len(port_tally))
-        return tt, col_info
+        return list(tt), col_info
 
     def _solve_ancillae(self, tt, col_info, na):
         'Solve for QUBO coefficients given a number of ancillae.'
@@ -95,7 +95,7 @@ class BQMMixin(object):
                 idx += 1
         return qubo
 
-    def solve_qubo(self, verbose=True):
+    def solve_qubo(self):
         '''Try increasing numbers of ancillae until the truth table can be
         expressed in terms of a QUBO's linear and quadratic coefficients.'''
         tt, col_info = self._truth_table()
