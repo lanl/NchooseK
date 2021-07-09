@@ -149,14 +149,14 @@ class Environment(object):
         for p in gps:
             if p not in self._port_names:
                 raise UnknownPortError(None, p)
-        self._constraints.append(Constraint(gps, {0}, soft=True))
+            self._constraints.append(Constraint([p], {0}, soft=True))
 
     def maximize(self, gps):
         'Try to set as mant environment-global ports to True as possible.'
         for p in gps:
             if p not in self._port_names:
                 raise UnknownPortError(None, p)
-        self._constraints.append(Constraint(gps, {len(gps)}, soft=True))
+            self._constraints.append(Constraint([p], {1}, soft=True))
 
     def nck(self, gps, vals, soft=False):
         '''Add a new constraint to the environment.  This method accepts
