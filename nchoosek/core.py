@@ -34,7 +34,7 @@ class Constraint(object):
     def __str__(self):
         'Return a constraint as a string.'
         msg = '%s choose %s' % (self.port_list, self.num_true)
-        if soft:
+        if self.soft:
             msg += ' (soft)'
         return msg
 

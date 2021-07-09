@@ -12,7 +12,7 @@ def solve(env):
     nck_to_z3 = {gp: z3.Int(gp) for gp in env.ports()}
     for v in nck_to_z3.values():
         s.add(v >= 0, v <= 1)
-    
+
     # Express each constraint with Z3.
     for i, c in enumerate(env.constraints()):
         ps = [nck_to_z3[p] for p in c.port_list]
@@ -23,7 +23,7 @@ def solve(env):
             adder = s.add
         if len(nts) == 1:
             # Single k value
-            adder(z3.Sum(ps) == nts.pop())
+            adder(z3.Sum(ps) == list(nts)[0])
         else:
             # Multiple k values
             disj = z3.BoolVector('disj%d' % i, len(nts))
