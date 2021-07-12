@@ -8,6 +8,7 @@
 import argparse
 import string
 import sys
+from itertools import product
 
 class TruthTable(object):
     'Represent a truth table and various operations on it.'
@@ -41,21 +42,12 @@ class TruthTable(object):
             self.tbl.add(tuple(tbl_line))
         self.nrows = len(self.tbl)
 
-    def _all_sequences(self, vals, n):
-        'Return all length-n sequences composed of vals.'
-        if n == 0:
-            return [[]]
-        else:
-            return [[e] + prev
-                    for e in vals
-                    for prev in self._all_sequences(vals, n - 1)]
-
     def _find_k_values(self, weights):
         '''Return a set of k values given a list of column weights.  Return
         None if no such k values can be found.'''
         valid_tallies = set()
         invalid_tallies = set()
-        for seq in self._all_sequences([0, 1], self.ncols):
+        for seq in product(*[[0, 1]], repeat=self.ncols):
             row = tuple(seq)
             s = sum([row[c]*weights[c] for c in range(self.ncols)])
             if row in tt.tbl:
@@ -72,7 +64,7 @@ class TruthTable(object):
         '''Return a list of column weights and a list of k values that reproduce
         the truth table.'''
         weight_list = list(range(1, self.ncols*2))  # QUERY: Is self.ncols*2 sufficient, or does it need to be 2**(self.ncols - 1)?
-        for weights in sorted(self._all_sequences(weight_list, tt.ncols), key=sum):
+        for weights in sorted(product(*[weight_list], repeat=tt.ncols), key=sum):
             kvals = self._find_k_values(weights)
             if kvals != None:
                 return weights, kvals
