@@ -52,8 +52,12 @@ class TruthTable(object):
             row = tuple(seq)
             s = sum([row[c]*weights[c] for c in range(self.ncols)])
             if row in tt.tbl:
+                if s in invalid_tallies:
+                    return None
                 valid_tallies.add(s)
             else:
+                if s in valid_tallies:
+                    return None
                 invalid_tallies.add(s)
         overlap = valid_tallies.intersection(invalid_tallies)
         if len(overlap) == 0:
