@@ -8,6 +8,7 @@
 import argparse
 import string
 import sys
+from collections import defaultdict
 from itertools import product
 
 class TruthTable(object):
@@ -60,15 +61,37 @@ class TruthTable(object):
         else:
             return None
 
-    def to_nck(self):
+    def _weights_from_sum(self, target, weights, nleft):
+        'Generate weights adding up to a given sum.'
+        # Handle the base case of no numbers left.
+        if nleft == 0:
+            if sum(weights) == target:
+                yield weights
+            return
+
+        # Handle the recursive case.
+        wt_sum = sum(weights)
+        for wt in range(1, 2**(self.ncols - 1) + 1):
+            if wt + wt_sum <= target - nleft + 1:
+                for rwt in self._weights_from_sum(target, [wt] + weights, nleft - 1):
+                    yield rwt
+            else:
+                break
+
+    def to_nck(self, verbose=False):
         '''Return a list of column weights and a list of k values that reproduce
         the truth table.'''
-        weight_list = list(range(1, self.ncols*2))  # QUERY: Is self.ncols*2 sufficient, or does it need to be 2**(self.ncols - 1)?
-        for weights in sorted(product(*[weight_list], repeat=tt.ncols), key=sum):
-            kvals = self._find_k_values(weights)
-            if kvals != None:
-                return weights, kvals
-        return None, None
+        # Consider weights with increasing sums until we find a solution.  We
+        # can always find a solution of weight 2^N-1 because we can assign a
+        # different power of 2 to each column to produce a unique k.
+        for target in range(tt.ncols, 2**tt.ncols):
+            if verbose:
+                sys.stderr.write('INFO: Trying N = %d\n' % target)
+            for weights in self._weights_from_sum(target, [], tt.ncols):
+                kvals = self._find_k_values(weights)
+                if kvals != None:
+                    return weights, kvals
+        return None, None  # We should never get here.
 
 ###########################################################################
 
@@ -78,6 +101,8 @@ parser.add_argument('infile', nargs='?', type=open, default=sys.stdin, metavar='
                     help='name of a file containing a truth table to express')
 parser.add_argument('--compress', '-c', action='store_true',
                     help='display repeated variable names only once but with a repetition count')
+parser.add_argument('--verbose', '-v', action='store_true',
+                    help='output progress messages as the program runs')
 cl_args = parser.parse_args()
 
 # Read a truth table.
@@ -85,7 +110,7 @@ tt = TruthTable()
 tt.read_from_file(cl_args.infile)
 
 # Convert the truth table to a pretty-printed NchooseK primitive.
-weights, kvals = tt.to_nck()
+weights, kvals = tt.to_nck(cl_args.verbose)
 if weights == None:
     sys.exit('Failed to convert the truth table')
 if cl_args.compress:
