@@ -9,7 +9,7 @@
 
 import argparse
 import nchoosek
-from nchoosek.solve import z3
+from nchoosek.solve import z3, ocean
 import sys
 
 # Parse the command line.
@@ -20,6 +20,8 @@ parser.add_argument('addend', type=int, metavar='NUM2',
                     help='Second number to add')
 parser.add_argument('--bits', '-b', type=int, metavar='INT',
                     help='Number of bits to use for each input')
+parser.add_argument('--solver', '-s', choices=['z3', 'ocean'], default='z3',
+                    help='Solver to use to perform the addition')
 cl_args = parser.parse_args()
 num1 = cl_args.augend
 num2 = cl_args.addend
@@ -67,8 +69,15 @@ for i in range(nbits):
     Adder([cin[i], a[i], b[i], cout[i], c[i]])
 env.same(c[nbits], cout[nbits - 1])
 
-# Solve for the sum, and output it as an integer.
-soln = z3.solve(env)
+# Solve for the sum.
+if cl_args.solver == 'z3':
+    soln = z3.solve(env)
+elif cl_args.solver == 'ocean':
+    soln = ocean.solve(env)
+else:
+    sys.exit('%s: Internal error -- unknown solver "%s"' % (sys.argv[0], cl_args.solver))
+
+# Output the sum as an integer.
 num3 = 0
 for i in range(nbits, -1, -1):
     num3 <<= 1
