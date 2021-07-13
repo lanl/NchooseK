@@ -22,6 +22,8 @@ parser.add_argument('--bits', '-b', type=int, metavar='INT',
                     help='Number of bits to use for each input')
 parser.add_argument('--solver', '-s', choices=['z3', 'ocean'], default='z3',
                     help='Solver to use to perform the addition')
+parser.add_argument('--samples', type=int, metavar='INT', default=10,
+                    help='Number of samples to take from the ocean solver')
 cl_args = parser.parse_args()
 num1 = cl_args.augend
 num2 = cl_args.addend
@@ -73,7 +75,7 @@ env.same(c[nbits], cout[nbits - 1])
 if cl_args.solver == 'z3':
     soln = z3.solve(env)
 elif cl_args.solver == 'ocean':
-    soln = ocean.solve(env)
+    soln = ocean.solve(env, num_reads=cl_args.samples)
 else:
     sys.exit('%s: Internal error -- unknown solver "%s"' % (sys.argv[0], cl_args.solver))
 
