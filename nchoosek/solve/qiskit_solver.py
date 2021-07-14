@@ -19,7 +19,6 @@ class ConstraintConversionError(Exception):
         super().__init__(msg)
 
 def solve(env, quantum_instance, hard_scale=10, optimizer=COBYLA()):
-    # optimizer.set_options(maxiter=500)
     
     prog = QuadraticProgram('nck')
     quad_dict = defaultdict(lambda: 0)
@@ -28,7 +27,7 @@ def solve(env, quantum_instance, hard_scale=10, optimizer=COBYLA()):
     for constr in env.constraints():
         qubo, _ = constr.solve_qubo()
         if qubo == None:
-            print("This is an error holdover")
+            raise ConstraintConversionError(str(c))
         for q1, q2, val in qubo:
             if not constr.soft:
                 val *= hard_scale
