@@ -13,11 +13,20 @@ class ConstraintConversionError(Exception):
         msg = 'failed to convert constraint to a QUBO: %s' % str(c)
         super().__init__(msg)
 
-def solve(env, sampler=None, hard_scale=10, **sampler_args):
+def solve(env, sampler=None, hard_scale=None, **sampler_args):
     'Solve for the variables in a given NchooseK environment.'
     # Create a sampler if one wasn't provided.
     if sampler == None:
         sampler = EmbeddingComposite(DWaveSampler())
+
+    # Scale the weight of hard constraints by either a user-specified
+    # value or by an amount greater than the total weight of all soft
+    # constraints.
+    if hard_scale is None:
+        hard_scale = 1   # A hard constraint is worth 1 more than all soft constraints combined.
+        for c in env.constraints():
+            if c.soft:
+                hard_scale += 1
 
     # Merge all constraints into a single, large QUBO.
     qubo = defaultdict(lambda: 0)
