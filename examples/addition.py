@@ -7,9 +7,11 @@
 # By Scott Pakin <pakin@lanl.gov>              #
 ################################################
 
+# This example also shows how to invoke a specific solver.
+
 import argparse
 import nchoosek
-from nchoosek.solve import z3, ocean
+from nchoosek.solver import z3, ocean
 import sys
 
 # Parse the command line.

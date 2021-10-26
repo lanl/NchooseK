@@ -8,7 +8,6 @@
 ###################################
 
 import nchoosek
-from nchoosek.solve import z3
 import sys
 
 # Read the number of rooks from the command line.
@@ -29,7 +28,7 @@ for c in idxs:
     ExactlyOne([board[r - 1][c - 1] for r in idxs])
 
 # Solve for all variables in the environment.
-result = z3.solve(env)
+result = nchoosek.solve(env)
 for r in idxs:
     for c in idxs:
         if result['A[%d][%d]' % (r, c)]:

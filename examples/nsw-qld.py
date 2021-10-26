@@ -8,7 +8,6 @@
 ###################################
 
 import nchoosek
-from nchoosek.solve import z3
 
 # Define a type for "exactly one color".
 env = nchoosek.Environment()
@@ -35,6 +34,6 @@ for c in set(env.constraints()):
 print('')
 
 # Solve for all variables in the environment.
-result = z3.solve(env)
+result = nchoosek.solve(env)
 for k, v in sorted(result.items()):
     print('%-16s  %s' % (k, v))

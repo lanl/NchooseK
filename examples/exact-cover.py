@@ -22,7 +22,6 @@
 ########################################
 
 import nchoosek
-from nchoosek.solve import z3
 
 env = nchoosek.Environment()
 S = [None] + [env.register_port('S%d' % i) for i in range(1, 7)]  # Number from 1.
@@ -33,5 +32,5 @@ env.nck([S[2], S[3]], {1})
 env.nck([S[1], S[2], S[3]], {1})
 env.nck([S[1], S[4], S[5]], {1})
 env.nck([S[3], S[4], S[6]], {1})
-result = z3.solve(env)
+result = nchoosek.solve(env)
 print('Exact vertex cover: %s' % (' '.join(sorted([k for k, v in result.items() if v]))))

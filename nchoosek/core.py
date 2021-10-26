@@ -2,7 +2,7 @@
 # NchooseK top-level definitions #
 ##################################
 
-from nchoosek.solve.bqm import BQMMixin
+from nchoosek.solver.bqm import BQMMixin
 
 class UnknownPortError(Exception):
     'An unknown port was referenced.'
