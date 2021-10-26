@@ -32,16 +32,18 @@ num2 = cl_args.addend
 if num1 < 0 or num2 < 0:
     sys.exit('%s: negative numbers are not yet supported' % sys.argv[0])
 nbits = cl_args.bits
-if nbits == None:
+if nbits is None:
     nbits = 1
     mval = max(num1, num2) >> 1
     while mval > 0:
         nbits += 1
         mval >>= 1
 if num1 >= 2**nbits:
-    sys.exit('%s: the number %d cannot be represented with %d bit(s)' % (sys.argv[0], num1, nbits))
+    sys.exit('%s: the number %d cannot be represented with %d bit(s)' %
+             (sys.argv[0], num1, nbits))
 if num2 >= 2**nbits:
-    sys.exit('%s: the number %d cannot be represented with %d bit(s)' % (sys.argv[0], num2, nbits))
+    sys.exit('%s: the number %d cannot be represented with %d bit(s)' %
+             (sys.argv[0], num2, nbits))
 
 # Create an environment.
 env = nchoosek.Environment()
@@ -50,7 +52,8 @@ env = nchoosek.Environment()
 # primitive.
 Adder = env.new_type('adder',
                      ['carry-in', 'A', 'B', 'C1', 'C0'],
-                     nchoosek.Constraint(['carry-in', 'A', 'B', *2*['C1'], *3*['C0']], {0, 4, 8}))
+                     nchoosek.Constraint(['carry-in', 'A', 'B',
+                                          *2*['C1'], *3*['C0']], {0, 4, 8}))
 
 # Define one port per input bit, output bit, and carry bit.
 a = [env.register_port('A%d' % i) for i in range(nbits)]
@@ -60,13 +63,13 @@ cout = [env.register_port('cout%d' % i) for i in range(nbits)]
 
 # Assign a value to each input bit.
 for i in range(nbits):
-    env.nck([a[i]], {(num1>>i)&1})
-    env.nck([b[i]], {(num2>>i)&1})
+    env.nck([a[i]], {(num1 >> i) & 1})
+    env.nck([b[i]], {(num2 >> i) & 1})
 
 # Define our carry-in to be initially False then the previous carry-out.
 always_false = env.register_port('false')
 env.nck([always_false], {0})
-cin = [always_false] + cout  # Here we can alias each input with the previous output.
+cin = [always_false] + cout  # Alias each input with the previous output.
 
 # Add from right to left with carry.
 for i in range(nbits):
@@ -79,7 +82,8 @@ if cl_args.solver == 'z3':
 elif cl_args.solver == 'ocean':
     soln = ocean.solve(env, num_reads=cl_args.samples)
 else:
-    sys.exit('%s: Internal error -- unknown solver "%s"' % (sys.argv[0], cl_args.solver))
+    sys.exit('%s: Internal error -- unknown solver "%s"' %
+             (sys.argv[0], cl_args.solver))
 
 # Output the sum as an integer.
 num3 = 0

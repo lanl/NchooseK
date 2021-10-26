@@ -11,8 +11,10 @@ import nchoosek
 
 # Define a type for "exactly one color".
 env = nchoosek.Environment()
-OneColor = env.new_type('one_color', 'RGBY', nchoosek.Constraint('RGBY', {1}))
-NotBothTrue = env.new_type('not_both_true', 'AB', nchoosek.Constraint('AB', {0, 1}))
+OneColor = env.new_type('one_color', 'RGBY',
+                        nchoosek.Constraint('RGBY', {1}))
+NotBothTrue = env.new_type('not_both_true', 'AB',
+                           nchoosek.Constraint('AB', {0, 1}))
 
 # Define all colors in all regions.
 qld = [env.register_port('qld.' + c) for c in 'RGBY']

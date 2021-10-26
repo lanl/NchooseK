@@ -6,6 +6,7 @@
 
 import z3
 
+
 def solve(env):
     'Solve for the variables in a given NchooseK environment.'
     # Constrain all ports to be either 0 or 1.
