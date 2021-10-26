@@ -28,7 +28,7 @@ for c in idxs:
     ExactlyOne([board[r - 1][c - 1] for r in idxs])
 
 # Solve for all variables in the environment.
-result = nchoosek.solve(env)
+result = env.solve()
 for r in idxs:
     for c in idxs:
         if result['A[%d][%d]' % (r, c)]:

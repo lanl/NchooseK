@@ -34,6 +34,6 @@ for c in set(env.constraints()):
 print('')
 
 # Solve for all variables in the environment.
-result = nchoosek.solve(env)
+result = env.solve()
 for k, v in sorted(result.items()):
     print('%-16s  %s' % (k, v))

@@ -23,5 +23,5 @@ for u, v in [(1, 2),
              (4, 6)]:
     env.nck([verts[u - 1], verts[v - 1]], {1, 2})
 env.minimize(verts)
-result = nchoosek.solve(env)
+result = env.solve()
 print('Minimum vertex cover: %s' % ' '.join(sorted([v for v, b in result.items() if b], key=int)))

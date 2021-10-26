@@ -64,7 +64,7 @@ for diag in all_diags:
     env.nck(diag, {0, 1})
 
 # Solve for all variables in the environment.
-result = nchoosek.solve(env)
+result = env.solve()
 for r in idxs:
     for c in idxs:
         if result['A[%d][%d]' % (r, c)]:

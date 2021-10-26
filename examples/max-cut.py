@@ -28,6 +28,6 @@ for edges in [(a, b),
               (c, e),
               (d, e)]:
     env.different(edges[0], edges[1], soft=True)
-result = nchoosek.solve(env)
+result = env.solve()
 print('Partition 1: %s' % ' '.join(sorted([k for k, v in result.items() if v])))
 print('Partition 2: %s' % ' '.join(sorted([k for k, v in result.items() if not v])))

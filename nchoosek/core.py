@@ -2,6 +2,7 @@
 # NchooseK top-level definitions #
 ##################################
 
+import nchoosek
 from nchoosek.solver.bqm import BQMMixin
 
 class UnknownPortError(Exception):
@@ -181,3 +182,7 @@ class Environment(object):
         # Although we store constraints as a list, we return them as a
         # set to reinforce that the order is meaningless.
         return set(self._constraints)
+
+    def solve(self, **params):
+        'Solve for all constraints in the environment.'
+        return nchoosek.solve(self, **params)
