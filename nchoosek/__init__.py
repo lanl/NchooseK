@@ -13,4 +13,4 @@ elif _solver_name == 'ocean':
     from nchoosek.solver import ocean
     solve = ocean.solve
 else:
-    raise RuntimeError('"%s" (from NCHOOSEK_SOLVER) is not a recognized NchooseK solver' % _solver_name)
+    raise ValueError('"%s" (from NCHOOSEK_SOLVER) is not a recognized NchooseK solver' % _solver_name)

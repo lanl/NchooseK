@@ -4,6 +4,8 @@
 
 import nchoosek
 from nchoosek.solver.bqm import BQMMixin
+import os
+import shlex
 
 class UnknownPortError(Exception):
     'An unknown port was referenced.'
@@ -185,4 +187,29 @@ class Environment(object):
 
     def solve(self, **params):
         'Solve for all constraints in the environment.'
-        return nchoosek.solve(self, **params)
+        # Parse key=value pairs in the NCHOOSEK_PARAMS environment variable.
+        args = {}
+        var_params = os.getenv('NCHOOSEK_PARAMS')
+        if var_params != None:
+            toks = shlex.split(var_params)
+            for t in toks:
+                try:
+                    # Parse "key=value" into a key and a value.
+                    eq = t.index('=')
+                    k, v = t[:eq], t[eq+1:]
+
+                    # Attempt to convert value to a number.
+                    try:
+                        v = int(v)
+                    except ValueError:
+                        try:
+                            v = float(v)
+                        except ValueError:
+                            pass
+                except ValueError:
+                    k, v = t, True
+                args[k] = v
+
+        # Invoke the solver.
+        args.update(**params)
+        return nchoosek.solve(self, **args)

@@ -19,7 +19,11 @@ That's it!  NchooseK may seem simplistic, but our hypothesis is that it is suffi
 Documentation
 -------------
 
-Documentation is forthcoming.  For the time being, please refer to the examples in the [examples](examples) subdirectory.  The main idea is to instantiate an `nchoosek.Environment`, which is basically a name space.  The environment's `register_port` method defines a variable, and the environment's `nck` method establishes a constraint given a list of ports and a set of allowable numbers of True ports.  Different solvers eventually will be supported; currently, only two exist: `z3`, which uses Microsoft Research's classical [Z3 Theorem Prover](https://github.com/Z3Prover/z3), and `ocean`, which uses D-Wave's [Ocean](https://ocean.dwavesys.com/) to run either classically or on a quantum computer.  Specify one of those in your `NCHOOSEK_SOLVER` environment variable (default: `z3`).  Invoke the `solve` method on the environment to solve for the value of every variable in the environment.  As a convenience, the environment's `new_type` method defines a reusable constraint that can be applied to different sets of inputs.
+Documentation is forthcoming.  For the time being, please refer to the examples in the [examples](examples) subdirectory.  The main idea is to instantiate an `nchoosek.Environment`, which is basically a name space.  The environment's `register_port` method defines a variable, and the environment's `nck` method establishes a constraint given a list of ports and a set of allowable numbers of True ports.
+
+Different solvers eventually will be supported.  Currently, only two exist: `z3`, which uses Microsoft Research's classical [Z3 Theorem Prover](https://github.com/Z3Prover/z3), and `ocean`, which uses D-Wave's [Ocean](https://ocean.dwavesys.com/) to run either classically or on a quantum computer.  Specify one of those in your `NCHOOSEK_SOLVER` environment variable (default: `z3`).  Invoke the `solve` method on the environment to solve for the value of every variable in the environment.  `solve` accepts solver-specific parameters, which also can be provided via the `NCHOOSEK_PARAMS` environment variable.
+
+As a convenience, the environment's `new_type` method defines a reusable constraint that can be applied to different sets of inputs.
 
 Installation
 ------------
