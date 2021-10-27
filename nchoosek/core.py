@@ -223,3 +223,38 @@ class Environment(object):
         # Invoke the solver.
         args.update(**params)
         return nchoosek.solve(self, **args)
+
+    class Validation(object):
+        'Encapsulate the status of a validation check.'
+
+        def __init__(self):
+            self.hard_passed = []
+            self.hard_failed = []
+            self.soft_passed = []
+            self.soft_failed = []
+
+    def validate_raw(self, soln):
+        '''Return a Validation object that partitions constraints based on
+        their pass/fail status.'''
+        result = self.Validation()
+        for c in self._constraints:
+            port_values = [soln[p] for p in c.port_list]
+            num_true = sum(port_values)
+            if num_true in c.num_true:
+                # Pass
+                if c.soft:
+                    result.soft_passed.append(c)
+                else:
+                    result.hard_passed.append(c)
+            else:
+                # Fail
+                if c.soft:
+                    result.soft_failed.append(c)
+                else:
+                    result.hard_failed.append(c)
+        return result
+
+    def valid(self, soln):
+        'Return True if all hard constraints are satisfied, False otherwise.'
+        raw = self.validate_raw(soln)
+        return len(raw.hard_failed) == 0
