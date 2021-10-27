@@ -233,7 +233,7 @@ class Environment(object):
             self.soft_passed = []
             self.soft_failed = []
 
-    def validate_raw(self, soln):
+    def validation(self, soln):
         '''Return a Validation object that partitions constraints based on
         their pass/fail status.'''
         result = self.Validation()
@@ -256,5 +256,5 @@ class Environment(object):
 
     def valid(self, soln):
         'Return True if all hard constraints are satisfied, False otherwise.'
-        raw = self.validate_raw(soln)
+        raw = self.validation(soln)
         return len(raw.hard_failed) == 0
