@@ -8,7 +8,6 @@
 ###################################
 
 import nchoosek
-from nchoosek.solve import z3
 import sys
 
 # Read the number of queens from the command line.
@@ -65,7 +64,7 @@ for diag in all_diags:
     env.nck(diag, {0, 1})
 
 # Solve for all variables in the environment.
-result = z3.solve(env)
+result = env.solve()
 for r in idxs:
     for c in idxs:
         if result['A[%d][%d]' % (r, c)]:

@@ -8,12 +8,13 @@
 ###################################
 
 import nchoosek
-from nchoosek.solve import z3
 
 # Define a type for "exactly one color".
 env = nchoosek.Environment()
-OneColor = env.new_type('one_color', 'RGBY', nchoosek.Constraint('RGBY', {1}))
-NotBothTrue = env.new_type('not_both_true', 'AB', nchoosek.Constraint('AB', {0, 1}))
+OneColor = env.new_type('one_color', 'RGBY',
+                        nchoosek.Constraint('RGBY', {1}))
+NotBothTrue = env.new_type('not_both_true', 'AB',
+                           nchoosek.Constraint('AB', {0, 1}))
 
 # Define all colors in all regions.
 qld = [env.register_port('qld.' + c) for c in 'RGBY']
@@ -35,6 +36,6 @@ for c in set(env.constraints()):
 print('')
 
 # Solve for all variables in the environment.
-result = z3.solve(env)
+result = env.solve()
 for k, v in sorted(result.items()):
     print('%-16s  %s' % (k, v))

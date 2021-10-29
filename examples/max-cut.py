@@ -14,7 +14,6 @@
 #######################################
 
 import nchoosek
-from nchoosek.solve import ocean
 
 env = nchoosek.Environment()
 a = env.register_port('A')
@@ -29,6 +28,8 @@ for edges in [(a, b),
               (c, e),
               (d, e)]:
     env.different(edges[0], edges[1], soft=True)
-result = ocean.solve(env)
-print('Partition 1: %s' % ' '.join(sorted([k for k, v in result.items() if v])))
-print('Partition 2: %s' % ' '.join(sorted([k for k, v in result.items() if not v])))
+result = env.solve()
+print('Partition 1: %s' %
+      ' '.join(sorted([k for k, v in result.items() if v])))
+print('Partition 2: %s' %
+      ' '.join(sorted([k for k, v in result.items() if not v])))

@@ -8,6 +8,7 @@ from collections import defaultdict
 import itertools
 import z3
 
+
 class BQMMixin(object):
     'Mixin for an nchoosek.Constraint that converts the Constraint to a BQM'
 
@@ -19,7 +20,8 @@ class BQMMixin(object):
             port_tally[c] += 1
 
         # Map each column number to a {port name, tally} pair.
-        col_info = [(p, port_tally[p]) for i, p in enumerate(sorted(port_tally))]
+        col_info = [(p, port_tally[p])
+                    for i, p in enumerate(sorted(port_tally))]
 
         # Return a truth table containing one column per unique port
         # name plus the per-column name and tally information
@@ -62,7 +64,8 @@ class BQMMixin(object):
                 exprs.append(z3.simplify(e))
 
             # Determine if the row honors the constraints.
-            valid = sum([b*col_info[i][1] for i, b in enumerate(row)]) in self.num_true
+            valid = sum([b*col_info[i][1]
+                         for i, b in enumerate(row)]) in self.num_true
             if valid:
                 # Valid row: exactly one ancilla combination results in a
                 # ground state; the rest result in an excited state.
@@ -82,7 +85,9 @@ class BQMMixin(object):
         # Convert the model to a QUBO, represented as a list of (port1, port2,
         # coefficient) triplets.  For linear terms, port1 == port2.
         qubo = []
-        port_names = [ci[0] for ci in col_info] + ['_anc%d' % (i + 1) for i in range(na)]
+        port_names = [ci[0]
+                      for ci in col_info] + ['_anc%d' % (i + 1)
+                                             for i in range(na)]
         for i in range(tnc):
             nm = port_names[i]
             val = model[cf[i]].as_long()
@@ -102,6 +107,6 @@ class BQMMixin(object):
         nc = len(col_info)
         for na in range(0, nc):
             soln = self._solve_ancillae(tt, col_info, na)
-            if soln != None:
+            if soln is not None:
                 return soln, na
         return None, na

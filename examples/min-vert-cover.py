@@ -12,7 +12,6 @@
 ######################################
 
 import nchoosek
-from nchoosek.solve import z3
 
 env = nchoosek.Environment()
 verts = [env.register_port(str(i + 1)) for i in range(6)]
@@ -24,5 +23,6 @@ for u, v in [(1, 2),
              (4, 6)]:
     env.nck([verts[u - 1], verts[v - 1]], {1, 2})
 env.minimize(verts)
-result = z3.solve(env)
-print('Minimum vertex cover: %s' % ' '.join(sorted([v for v, b in result.items() if b], key=int)))
+result = env.solve()
+print('Minimum vertex cover: %s' %
+      ' '.join(sorted([v for v, b in result.items() if b], key=int)))
