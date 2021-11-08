@@ -12,6 +12,9 @@ if _solver_name is None or _solver_name == 'z3':
 elif _solver_name == 'ocean':
     from nchoosek.solver import ocean
     solve = ocean.solve
+elif _solver_name == 'qiskit':
+    from nchoosek.solver import qiskit_solver
+    solve = qiskit_solver.solve
 else:
     raise ValueError('"%s" (from NCHOOSEK_SOLVER) is not a recognized '
                      'NchooseK solver' % _solver_name)
