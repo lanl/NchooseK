@@ -19,9 +19,14 @@ def _name_to_solver(name):
         raise ValueError('"%s" is not a recognized NchooseK solver' % name)
 
 
-# Load a solver based on the setting of the NCHOOSEK_SOLVER
-# environment variable
+# Load a solver based on the setting of the NCHOOSEK_SOLVER environment
+# variable.
 _solver_name = os.getenv('NCHOOSEK_SOLVER')
 if _solver_name is None:
     _solver_name = 'z3'
 solve = _name_to_solver(_solver_name)
+
+
+def solver_name():
+    'Return the name of the solver being used.'
+    return _solver_name
