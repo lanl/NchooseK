@@ -195,7 +195,7 @@ class Environment(object):
         # set to reinforce that the order is meaningless.
         return set(self._constraints)
 
-    def solve(self, *args, **kwargs):
+    def solve(self, solver=None, *args, **kwargs):
         'Solve for all constraints in the environment.'
         # Parse key=value pairs in the NCHOOSEK_PARAMS environment variable.
         all_kwargs = {}
@@ -222,7 +222,10 @@ class Environment(object):
 
         # Invoke the solver.
         all_kwargs.update(**kwargs)
-        return nchoosek.solve(self, *args, **all_kwargs)
+        solve_func = nchoosek.solve
+        if solver is not None:
+            solve_func = nchoosek._name_to_solver(solver)
+        return solve_func(self, *args, **all_kwargs)
 
     class Validation(object):
         'Encapsulate the status of a validation check.'
