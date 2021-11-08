@@ -7,14 +7,14 @@ import os
 import sys
 _solver_name = os.getenv('NCHOOSEK_SOLVER')
 if _solver_name is None or _solver_name == 'z3':
-    from nchoosek.solver import z3
-    solve = z3.solve
+    import nchoosek.solver.z3
+    solve = nchoosek.solver.z3.solve
 elif _solver_name == 'ocean':
-    from nchoosek.solver import ocean
-    solve = ocean.solve
+    import nchoosek.solver.ocean
+    solve = nchoosek.solver.ocean.solve
 elif _solver_name == 'qiskit':
-    from nchoosek.solver import qiskit_solver
-    solve = qiskit_solver.solve
+    import nchoosek.solver.qiskit
+    solve = nchoosek.solver.qiskit.solve
 else:
     raise ValueError('"%s" (from NCHOOSEK_SOLVER) is not a recognized '
                      'NchooseK solver' % _solver_name)
