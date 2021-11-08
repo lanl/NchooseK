@@ -19,12 +19,22 @@ class ConstraintConversionError(Exception):
         msg = 'failed to convert constraint to a QUBO: %s' % str(c)
         super().__init__(msg)
 
-def solve(env, quantum_instance=None, hard_scale=10, optimizer=COBYLA()):
+def solve(env, quantum_instance=None, hard_scale=None, optimizer=COBYLA()):
     
     # If there is no quantum_instance given, run it on a simulator on the
     # computer running the program.
     if not quantum_instance:
         quantum_instance = QuantumInstance(qiskit.Aer.get_backend('qasm_simulator'))
+
+    # Scale the weight of hard constraints by either a user-specified
+    # value or by an amount greater than the total weight of all soft
+    # constraints.
+    if hard_scale is None:
+        # A hard constraint is worth 1 more than all soft constraints combined.
+        hard_scale = 1
+        for c in env.constraints():
+            if c.soft:
+                hard_scale += 1
         
     prog = QuadraticProgram('nck')
     # This dictionary will be passed to the Quadratic Program.
