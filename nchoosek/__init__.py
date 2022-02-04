@@ -9,9 +9,6 @@ def _name_to_solver(name):
     if name == 'z3':
         import nchoosek.solver.z3
         return nchoosek.solver.z3.solve
-    if name == 'z3_qubo':
-        import nchoosek.solver.z3_qubo
-        return nchoosek.solver.z3_qubo.solve
     elif name == 'ocean':
         import nchoosek.solver.ocean
         return nchoosek.solver.ocean.solve
