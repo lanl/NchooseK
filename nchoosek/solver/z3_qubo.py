@@ -5,32 +5,13 @@
 ######################################################
 
 import z3
-from collections import defaultdict
-from nchoosek.solver import ConstraintConversionError
+from nchoosek.solver import construct_qubo
 
 
 def solve(env, hard_scale=None):
     'Solve for the variables in a given NchooseK environment.'
-    # Scale the weight of hard constraints by either a user-specified
-    # value or by an amount greater than the total weight of all soft
-    # constraints.
-    if hard_scale is None:
-        # A hard constraint is worth 1 more than all soft constraints combined.
-        hard_scale = 1
-        for c in env.constraints():
-            if c.soft:
-                hard_scale += 1
-
-    # Merge all constraints into a single, large QUBO.
-    qubo = defaultdict(lambda: 0)
-    for c in env.constraints():
-        qqv, _ = c.solve_qubo()
-        if qqv is None:
-            raise ConstraintConversionError(str(c))
-        for q1, q2, val in qqv:
-            if not c.soft:
-                val *= hard_scale
-            qubo[(q1, q2)] += val
+    # Convert the environment to a QUBO.
+    qubo = construct_qubo(env, hard_scale)
 
     # Constrain all QUBO variables to be either 0 or 1.
     all_vars = {e for qs in qubo for e in qs}
@@ -46,6 +27,7 @@ def solve(env, hard_scale=None):
             # Linear constraints
             obj += wt*nck_to_z3[q0]
         else:
+            # Quadratic constraints
             obj += wt*nck_to_z3[q0]*nck_to_z3[q1]
     s.minimize(obj)
 
