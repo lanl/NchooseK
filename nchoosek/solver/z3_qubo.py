@@ -1,4 +1,4 @@
-# ####################################################
+######################################################
 # Use the Z3 Theorem Prover to solve classically for #
 # the variables in an NchooseK environment, first    #
 # converting the environment to a QUBO               #
@@ -6,14 +6,7 @@
 
 import z3
 from collections import defaultdict
-
-
-class ConstraintConversionError(Exception):
-    'A constraint could not be converted to a QUBO.'
-
-    def __init__(self, c):
-        msg = 'failed to convert constraint to a QUBO: %s' % str(c)
-        super().__init__(msg)
+from nchoosek.solver import ConstraintConversionError
 
 
 def solve(env, hard_scale=None):

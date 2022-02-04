@@ -5,14 +5,7 @@
 
 from dwave.system import DWaveSampler, EmbeddingComposite
 from collections import defaultdict
-
-
-class ConstraintConversionError(Exception):
-    'A constraint could not be converted to a QUBO.'
-
-    def __init__(self, c):
-        msg = 'failed to convert constraint to a QUBO: %s' % str(c)
-        super().__init__(msg)
+from nchoosek.solver import ConstraintConversionError
 
 
 def solve(env, sampler=None, hard_scale=None, **sampler_args):
