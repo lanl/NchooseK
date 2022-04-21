@@ -263,6 +263,8 @@ class Environment(object):
         return len(raw.hard_failed) == 0
 
     def quality(self, soln):
+        '''Return the number of soft constraints which passed and the total
+        number of soft constraints.'''
         raw = self.validation(soln)
         soft = len(raw.soft_passed)
         total = soft + len(raw.soft_failed)

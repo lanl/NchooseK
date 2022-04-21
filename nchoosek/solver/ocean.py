@@ -22,7 +22,7 @@ def solve(env, sampler=None, hard_scale=None, **sampler_args):
     result = sampler.sample_qubo(qubo, **sampler_args)
 
     # Convert the result to a mapping from port names to Booleans and
-    # return it.
+    # record it, the number of occurences, and the energies.
     ports = env.ports()
     res = []
     num = []
@@ -31,9 +31,9 @@ def solve(env, sampler=None, hard_scale=None, **sampler_args):
         res.append({k: v != 0 for k, v in it.sample.items() if k in ports})
         num.append(it.num_occurrences)
         en.append(it.energy)
-    ret.energies = en
     ret.solutions = res
     ret.tallies = num
+    ret.energies = en
 
     # Insepct the embedding to find out how many qubits were used
     # Simulators will not have embedding_context even using dwave.inspector
