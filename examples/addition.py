@@ -11,7 +11,6 @@
 
 import argparse
 import nchoosek
-from nchoosek.solver import z3, ocean
 import sys
 
 # Parse the command line.
@@ -78,8 +77,10 @@ env.same(c[nbits], cout[nbits - 1])
 
 # Solve for the sum.
 if cl_args.solver == 'z3':
+    from nchoosek.solver import z3
     soln = z3.solve(env)
 elif cl_args.solver == 'ocean':
+    from nchoosek.solver import ocean
     soln = ocean.solve(env, num_reads=cl_args.samples)
 else:
     sys.exit('%s: Internal error -- unknown solver "%s"' %
