@@ -40,7 +40,9 @@ def direct_solve(env):
     if s.check() != z3.sat:
         return None
     model = s.model()
-    return {k: bool(model[v].as_long()) for k, v in nck_to_z3.items()}
+    ret = env.Result()
+    ret.solutions = [{k: bool(model[v].as_long()) for k, v in nck_to_z3.items()}]
+    return ret
 
 
 def qubo_solve(env, hard_scale):
@@ -74,9 +76,9 @@ def qubo_solve(env, hard_scale):
         return None
     model = s.model()
     ports = env.ports()
-    return {k: bool(model[v].as_long())
-            for k, v in nck_to_z3.items()
-            if k in ports}
+    ret = env.Result()
+    ret.solutions = [{k: bool(model[v].as_long()) for k, v in nck_to_z3.items()}]
+    return ret
 
 
 def solve(env, qubo=False, hard_scale=None):
