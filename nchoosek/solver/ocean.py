@@ -5,6 +5,7 @@
 
 from dwave.system import DWaveSampler, EmbeddingComposite
 import dwave.inspector
+from nchoosek import solver
 from nchoosek.solver import construct_qubo
 
 
@@ -18,7 +19,7 @@ def solve(env, sampler=None, hard_scale=None, **sampler_args):
     qubo = construct_qubo(env, hard_scale)
 
     # Solve the QUBO using the given sampler.
-    ret = env.Result()
+    ret = solver.Result()
     result = sampler.sample_qubo(qubo, **sampler_args)
 
     # Convert the result to a mapping from port names to Booleans and

@@ -3,6 +3,7 @@
 # the variables in an NchooseK environment      #
 #################################################
 
+from nchoosek import solver
 from nchoosek.solver import construct_qubo
 import qiskit
 import datetime
@@ -35,7 +36,7 @@ def solve(env, quantum_instance=None, hard_scale=None, optimizer=COBYLA()):
     qaoa = MinimumEigenOptimizer(QAOA(optimizer=optimizer, reps=1,
                                  quantum_instance=quantum_instance))
     result = qaoa.solve(prog)
-    ret = env.Result()
+    ret = solver.Result()
 
     ret.solutions = []
     ret.solutions.append({k: v != 0 for k, v in result.variables_dict.items() if k in env.ports()})

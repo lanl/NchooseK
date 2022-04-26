@@ -269,15 +269,3 @@ class Environment(object):
         soft = len(raw.soft_passed)
         total = soft + len(raw.soft_failed)
         return soft, total
-
-    class Result(object):
-        'Encapsulate the different results and other data.'
-
-        def __init__(self):
-            self.solutions = None
-            self.tallies = None
-            self.energies = None
-            self.jobs = None
-            self.jobIDs = None
-            self.qubits = None
-            self.depth = None

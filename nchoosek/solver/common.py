@@ -49,3 +49,16 @@ def construct_qubo(env, hard_scale):
             qubo[(q1, q2)] += val
         total_anc += len({a for a in [q1, q2] if a[:4] == '_anc'})
     return qubo
+
+
+class Result(object):
+    'Encapsulate solver results and related data.'
+
+    def __init__(self):
+        self.solutions = None
+        self.tallies = None
+        self.energies = None
+        self.jobs = None
+        self.jobIDs = None
+        self.qubits = None
+        self.depth = None

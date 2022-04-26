@@ -4,6 +4,7 @@
 # an NchooseK environment            #
 ######################################
 
+from nchoosek import solver
 from nchoosek.solver import construct_qubo
 import z3
 
@@ -40,7 +41,7 @@ def direct_solve(env):
     if s.check() != z3.sat:
         return None
     model = s.model()
-    ret = env.Result()
+    ret = solver.Result()
     ret.solutions = [{k: bool(model[v].as_long()) for k, v in nck_to_z3.items()}]
     return ret
 
@@ -76,7 +77,7 @@ def qubo_solve(env, hard_scale):
         return None
     model = s.model()
     ports = env.ports()
-    ret = env.Result()
+    ret = solver.Result()
     ret.solutions = [{k: bool(model[v].as_long()) for k, v in nck_to_z3.items()}]
     return ret
 
