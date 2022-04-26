@@ -29,7 +29,8 @@ for edges in [(a, b),
               (d, e)]:
     env.different(edges[0], edges[1], soft=True)
 result = env.solve()
+soln = result.solutions[0]
 print('Partition 1: %s' %
-      ' '.join(sorted([k for k, v in result.items() if v])))
+      ' '.join(sorted([k for k, v in soln.items() if v])))
 print('Partition 2: %s' %
-      ' '.join(sorted([k for k, v in result.items() if not v])))
+      ' '.join(sorted([k for k, v in soln.items() if not v])))

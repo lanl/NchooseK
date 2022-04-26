@@ -37,5 +37,6 @@ print('')
 
 # Solve for all variables in the environment.
 result = env.solve()
-for k, v in sorted(result.items()):
+soln = result.solutions[0]
+for k, v in sorted(soln.items()):
     print('%-16s  %s' % (k, v))

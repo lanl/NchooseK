@@ -78,13 +78,14 @@ env.same(c[nbits], cout[nbits - 1])
 # Solve for the sum.
 if cl_args.solver == 'z3':
     from nchoosek.solver import z3
-    soln = z3.solve(env)
+    result = z3.solve(env)
 elif cl_args.solver == 'ocean':
     from nchoosek.solver import ocean
-    soln = ocean.solve(env, num_reads=cl_args.samples)
+    result = ocean.solve(env, num_reads=cl_args.samples)
 else:
     sys.exit('%s: Internal error -- unknown solver "%s"' %
              (sys.argv[0], cl_args.solver))
+soln = result.solutions[0]
 
 # Output the sum as an integer.
 num3 = 0

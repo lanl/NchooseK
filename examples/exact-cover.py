@@ -34,5 +34,6 @@ env.nck([S[1], S[2], S[3]], {1})
 env.nck([S[1], S[4], S[5]], {1})
 env.nck([S[3], S[4], S[6]], {1})
 result = env.solve()
+soln = result.solutions[0]
 print('Exact vertex cover: %s' %
-      (' '.join(sorted([k for k, v in result.items() if v]))))
+      (' '.join(sorted([k for k, v in soln.items() if v]))))

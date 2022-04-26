@@ -65,9 +65,10 @@ for diag in all_diags:
 
 # Solve for all variables in the environment.
 result = env.solve()
+soln = result.solutions[0]
 for r in idxs:
     for c in idxs:
-        if result['A[%d][%d]' % (r, c)]:
+        if soln['A[%d][%d]' % (r, c)]:
             print('* ', end='')
         else:
             print('- ', end='')
