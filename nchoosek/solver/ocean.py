@@ -4,7 +4,6 @@
 ########################################
 
 from dwave.system import DWaveSampler, EmbeddingComposite
-import dwave.inspector
 from nchoosek import solver
 from nchoosek.solver import construct_qubo
 
@@ -20,7 +19,7 @@ def solve(env, sampler=None, hard_scale=None, **sampler_args):
 
     # Solve the QUBO using the given sampler.
     ret = solver.Result()
-    result = sampler.sample_qubo(qubo, **sampler_args)
+    result = sampler.sample_qubo(qubo, return_embedding=True, **sampler_args)
 
     # Convert the result to a mapping from port names to Booleans and
     # record it, the number of occurences, and the energies.
@@ -36,8 +35,9 @@ def solve(env, sampler=None, hard_scale=None, **sampler_args):
     ret.tallies = num
     ret.energies = en
 
-    # Insepct the embedding to find out how many qubits were used
-    # Simulators will not have embedding_context even using dwave.inspector
+    # Inspect the embedding to find out how many qubits were used.
+    # Simulators will not have embedding_context so we assume no
+    # additional qubits were required.
     try:
         embed = result.info['embedding_context']['embedding']
         nqubs = 0
