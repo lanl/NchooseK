@@ -7,7 +7,6 @@ from nchoosek import solver
 from nchoosek.solver import construct_qubo
 import qiskit
 import datetime
-import re
 from qiskit_optimization import QuadraticProgram
 from qiskit_optimization.algorithms import MinimumEigenOptimizer
 from qiskit.algorithms import QAOA
