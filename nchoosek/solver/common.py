@@ -58,7 +58,54 @@ class Result(object):
         self.solutions = None
         self.tallies = None
         self.energies = None
-        self.jobs = None
         self.jobIDs = None
         self.qubits = None
         self.depth = None
+        self.times = None
+        self.quantum_instance = None
+
+    def __repr__(self):
+        ret = ""
+        if self.soltuions:
+           ret += "top solution: " + str(self.solutions[0]) + "\n"
+           ret += "number of solutions: " + str(len(self.solutions[0])) + "\n"
+        if self.tallies:
+            ret += "top solution tallies: " + str(self.tallies[0]) + "\n"
+        if self.energies:
+            ret += "top solution energy: " + str(self.energies[0]) + "\n"
+        if self.qubits:
+            ret += "qubits: " + str(self.qubits) + "\n"
+        if self.depth:
+            ret += "depth: " + str(self.depth) + "\n"
+        if self.times:
+            ret += "times: " + str(self.times) + "\n"
+        if self.qiskit_info:
+            ret += "Qiskit backend: " + str(self.quantum_instance.backend) + "\n"
+            # ret += "  backend: " + str(self.qiskit_info['backend']) + "\n"
+            # ret += "  group: " + str(self.qiskit_info['group']) + "\n"
+            # ret += "  : " + str(self.qiskit_info['group']) + "\n"
+        ret = ret[:-1]
+        return ret
+
+    def details(self):
+        if self.quantum_instance:
+            try:
+                device = self.quantum_instance.backend
+                jobs = device.jobs(limit=50, start_datetime=self.times[0], end_datetime=self.times[1])
+                qasm = jobs[2].circuits()[0].qasm()
+                count = 0
+                # Qiskit jobs don't tell you how many physical qubits get used;
+                # we need to search through the final qasm.
+                for i in range(device.configuration().n_qubits):
+                    if re.search(r"cx[^;]*q\[" + str(i) + r"\]", qasm) or re.search(r"rz\([^\(]*\) q\[" + str(i) + r"\]", qasm):
+                        count += 1
+
+                self.jobIDs = []
+                for job in jobs:
+                    self.jobIDs.append(job.job_id())
+                self.qubits = count
+                self.depth = jobs[2].circuits()[0].depth()
+            except:
+                print("Jobs not found")
+        else:
+            pass
