@@ -66,36 +66,31 @@ class Result(object):
         self.quantum_instance = None
 
     def __repr__(self):
-        ret = ""
+        ret = {}
         if self.solutions:
-           ret += "top solution: " + str(self.solutions[0]) + "\n"
-           ret += "number of solutions: " + str(len(self.solutions)) + "\n"
+           ret["top solution"] = self.solutions[0]
+           ret["number of solutions"] = len(self.solutions)
         if self.tallies:
-            ret += "top solution tallies: " + str(self.tallies[0]) + "\n"
+            ret["top solution tallies"] = self.tallies[0]
         if self.energies:
-            ret += "top solution energy: " + str(self.energies[0]) + "\n"
+            ret["top solution energy"] = self.energies[0]
         if self.qubits:
-            ret += "qubits: " + str(self.qubits) + "\n"
+            ret["qubits"] = self.qubits
         if self.depth:
-            ret += "depth: " + str(self.depth) + "\n"
+            ret["depth"] = self.depth
         if self.times:
-            ret += "times: " + str(self.times) + "\n"
+            ret["times"] = (self.times[0].strftime("%Y-%m-%d %H:%M:%S.%f"), self.times[1].strftime("%Y-%m-%d %H:%M:%S.%f"))
         if self.quantum_instance:
-            ret += "Qiskit backend: " + str(self.quantum_instance.backend) + "\n"
-        ret = ret[:-1]
-        return ret
+            ret["Qiskit backend"] = self.quantum_instance.backend
+        # ret = ret[:-1]
+        return str(ret)
 
     def details(self):
         if self.quantum_instance:
             try:
                 device = self.quantum_instance.backend
-                print(device)
-                print(self.times[0])
-                print(self.times[1])
                 jobs = device.jobs(limit=50, start_datetime=self.times[0], end_datetime=self.times[1])
-                print(jobs)
                 qasm = jobs[2].circuits()[0].qasm()
-                print(qasm)
                 count = 0
                 # Qiskit jobs don't tell you how many physical qubits get used;
                 # we need to search through the final qasm.
