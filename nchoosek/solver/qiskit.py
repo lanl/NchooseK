@@ -38,7 +38,9 @@ def solve(env, quantum_instance=None, hard_scale=None, optimizer=COBYLA()):
     ret = solver.Result()
 
     ret.solutions = []
-    ret.solutions.append({k: v != 0 for k, v in result.variables_dict.items() if k in env.ports()})
+    ret.solutions.append({k: v != 0
+                          for k, v in result.variables_dict.items()
+                          if k in env.ports()})
     # Record this time now to ensure that the QAOA is done running first.
     time2 = datetime.datetime.now()
     ret.times = (time1, time2)

@@ -44,7 +44,8 @@ def direct_solve(env):
         return None
     model = s.model()
     ret = solver.Result()
-    ret.solutions = [{k: bool(model[v].as_long()) for k, v in nck_to_z3.items()}]
+    ret.solutions = [{k: bool(model[v].as_long())
+                      for k, v in nck_to_z3.items()}]
     time2 = datetime.datetime.now()
     ret.times = (time1, time2)
     return ret
@@ -82,7 +83,8 @@ def qubo_solve(env, hard_scale):
     model = s.model()
     ports = env.ports()
     ret = solver.Result()
-    ret.solutions = [{k: bool(model[v].as_long()) for k, v in nck_to_z3.items()}]
+    ret.solutions = [{k: bool(model[v].as_long())
+                      for k, v in nck_to_z3.items()}]
     return ret
 
 

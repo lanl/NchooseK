@@ -68,8 +68,8 @@ class Result(object):
     def __repr__(self):
         ret = {}
         if self.solutions:
-           ret["top solution"] = self.solutions[0]
-           ret["number of solutions"] = len(self.solutions)
+            ret["top solution"] = self.solutions[0]
+            ret["number of solutions"] = len(self.solutions)
         if self.tallies:
             ret["top solution tallies"] = self.tallies[0]
         if self.energies:
@@ -79,7 +79,8 @@ class Result(object):
         if self.depth:
             ret["depth"] = self.depth
         if self.times:
-            ret["times"] = (self.times[0].strftime("%Y-%m-%d %H:%M:%S.%f"), self.times[1].strftime("%Y-%m-%d %H:%M:%S.%f"))
+            ret["times"] = (self.times[0].strftime("%Y-%m-%d %H:%M:%S.%f"),
+                            self.times[1].strftime("%Y-%m-%d %H:%M:%S.%f"))
         if self.quantum_instance:
             ret["Qiskit backend"] = self.quantum_instance.backend
         # ret = ret[:-1]
@@ -89,13 +90,16 @@ class Result(object):
         if self.quantum_instance:
             try:
                 device = self.quantum_instance.backend
-                jobs = device.jobs(limit=50, start_datetime=self.times[0], end_datetime=self.times[1])
+                jobs = device.jobs(limit=50,
+                                   start_datetime=self.times[0],
+                                   end_datetime=self.times[1])
                 qasm = jobs[2].circuits()[0].qasm()
                 count = 0
                 # Qiskit jobs don't tell you how many physical qubits get used;
                 # we need to search through the final qasm.
                 for i in range(device.configuration().n_qubits):
-                    if re.search(r"cx[^;]*q\[" + str(i) + r"\]", qasm) or re.search(r"rz\([^\(]*\) q\[" + str(i) + r"\]", qasm):
+                    if re.search(r"cx[^;]*q\[" + str(i) + r"\]", qasm) or \
+                       re.search(r"rz\([^\(]*\) q\[" + str(i) + r"\]", qasm):
                         count += 1
 
                 self.jobIDs = []
