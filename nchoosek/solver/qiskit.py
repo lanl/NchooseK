@@ -7,7 +7,6 @@ from nchoosek import solver
 from nchoosek.solver import construct_qubo
 import qiskit
 import datetime
-import re
 from qiskit_optimization import QuadraticProgram
 from qiskit_optimization.algorithms import MinimumEigenOptimizer
 from qiskit.algorithms import QAOA
@@ -42,25 +41,9 @@ def solve(env, quantum_instance=None, hard_scale=None, optimizer=COBYLA()):
     ret.solutions.append({k: v != 0 for k, v in result.variables_dict.items() if k in env.ports()})
     # Record this time now to ensure that the QAOA is done running first.
     time2 = datetime.datetime.now()
+    ret.times = (time1, time2)
     ret.tallies = [1]
-    try:
-        jobs = device.jobs(limit=50, start_datetime=time1, end_datetime=time2)
-        qasm = jobs[2].circuits()[0].qasm()
-        count = 0
-        # Qiskit jobs don't tell you how many physical qubits get used;
-        # we need to search through the final qasm.
-        for i in range(device.configuration().n_qubits):
-            if re.search(r"cx[^;]*q\[" + str(i) + r"\]", qasm) or re.search(r"rz\([^\(]*\) q\[" + str(i) + r"\]", qasm):
-                count += 1
-
-        ret.jobIDs = []
-        for job in jobs:
-            ret.jobIDs.append(job.job_id())
-        ret.jobs = len(jobs)
-        ret.qubits = count
-        ret.depth = jobs[2].circuits()[0].depth()
-    except:
-        pass
+    ret.quantum_instance = quantum_instance
 
     # Convert the result to a mapping from port names to Booleans and
     # return it.

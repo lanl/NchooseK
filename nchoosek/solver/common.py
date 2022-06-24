@@ -4,6 +4,7 @@
 #########################################
 
 from collections import defaultdict
+import re
 
 
 class ConstraintConversionError(Exception):
@@ -58,7 +59,49 @@ class Result(object):
         self.solutions = None
         self.tallies = None
         self.energies = None
-        self.jobs = None
         self.jobIDs = None
         self.qubits = None
         self.depth = None
+        self.times = None
+        self.quantum_instance = None
+
+    def __repr__(self):
+        ret = {}
+        if self.solutions:
+           ret["top solution"] = self.solutions[0]
+           ret["number of solutions"] = len(self.solutions)
+        if self.tallies:
+            ret["top solution tallies"] = self.tallies[0]
+        if self.energies:
+            ret["top solution energy"] = self.energies[0]
+        if self.qubits:
+            ret["qubits"] = self.qubits
+        if self.depth:
+            ret["depth"] = self.depth
+        if self.times:
+            ret["times"] = (self.times[0].strftime("%Y-%m-%d %H:%M:%S.%f"), self.times[1].strftime("%Y-%m-%d %H:%M:%S.%f"))
+        if self.quantum_instance:
+            ret["Qiskit backend"] = self.quantum_instance.backend
+        # ret = ret[:-1]
+        return str(ret)
+
+    def details(self):
+        if self.quantum_instance:
+            try:
+                device = self.quantum_instance.backend
+                jobs = device.jobs(limit=50, start_datetime=self.times[0], end_datetime=self.times[1])
+                qasm = jobs[2].circuits()[0].qasm()
+                count = 0
+                # Qiskit jobs don't tell you how many physical qubits get used;
+                # we need to search through the final qasm.
+                for i in range(device.configuration().n_qubits):
+                    if re.search(r"cx[^;]*q\[" + str(i) + r"\]", qasm) or re.search(r"rz\([^\(]*\) q\[" + str(i) + r"\]", qasm):
+                        count += 1
+
+                self.jobIDs = []
+                for job in jobs:
+                    self.jobIDs.append(job.job_id())
+                self.qubits = count
+                self.depth = jobs[2].circuits()[0].depth()
+            except:
+                pass

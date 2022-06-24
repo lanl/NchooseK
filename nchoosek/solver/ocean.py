@@ -3,6 +3,7 @@
 # variables in an NchooseK environment #
 ########################################
 
+import datetime
 from dwave.system import DWaveSampler, EmbeddingComposite
 from nchoosek import solver
 from nchoosek.solver import construct_qubo
@@ -17,6 +18,7 @@ def solve(env, sampler=None, hard_scale=None, **sampler_args):
     # Convert the environment to a QUBO.
     qubo = construct_qubo(env, hard_scale)
 
+    time1 = datetime.datetime.now()
     # Solve the QUBO using the given sampler.
     ret = solver.Result()
     result = sampler.sample_qubo(qubo, return_embedding=True, **sampler_args)
@@ -32,6 +34,8 @@ def solve(env, sampler=None, hard_scale=None, **sampler_args):
         num.append(it.num_occurrences)
         en.append(it.energy)
     ret.solutions = res
+    time2 = datetime.datetime.now()
+    ret.times = (time1, time2)
     ret.tallies = num
     ret.energies = en
 
