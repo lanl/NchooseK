@@ -83,7 +83,6 @@ class Result(object):
                             self.times[1].strftime("%Y-%m-%d %H:%M:%S.%f"))
         if self.quantum_instance:
             ret["Qiskit backend"] = self.quantum_instance.backend
-        # ret = ret[:-1]
         return str(ret)
 
     def details(self):
@@ -107,5 +106,6 @@ class Result(object):
                     self.jobIDs.append(job.job_id())
                 self.qubits = count
                 self.depth = jobs[2].circuits()[0].depth()
-            except:
+            except AttributeError:
+                # Qiskit's local simulator lacks a jobs field.
                 pass
