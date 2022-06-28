@@ -68,6 +68,24 @@ class Result(object):
     def __repr__(self):
         ret = {}
         if self.solutions:
+            ret["solutions"] = self.solutions
+        if self.tallies:
+            ret["tallies"] = self.tallies
+        if self.energies:
+            ret["energies"] = self.energies
+        if self.qubits:
+            ret["qubits"] = self.qubits
+        if self.depth:
+            ret["depth"] = self.depth
+        if self.times:
+            ret["times"] = self.times
+        if self.quantum_instance:
+            ret["Qiskit backend"] = self.quantum_instance.backend
+        return 'nchoosek.solver.Result(%s)' % str(ret)
+
+    def __str__(self):
+        ret = {}
+        if self.solutions:
             ret["top solution"] = self.solutions[0]
             ret["number of solutions"] = len(self.solutions)
         if self.tallies:
@@ -82,7 +100,7 @@ class Result(object):
             ret["times"] = (self.times[0].strftime("%Y-%m-%d %H:%M:%S.%f"),
                             self.times[1].strftime("%Y-%m-%d %H:%M:%S.%f"))
         if self.quantum_instance:
-            ret["Qiskit backend"] = self.quantum_instance.backend
+            ret["Qiskit backend"] = self.quantum_instance.backend.name()
         return str(ret)
 
     def details(self):
