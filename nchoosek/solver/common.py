@@ -48,7 +48,7 @@ def construct_qubo(env, hard_scale):
             q1 = rename_ancilla(q1, total_anc)
             q2 = rename_ancilla(q2, total_anc)
             qubo[(q1, q2)] += val
-        total_anc += len({a for a in [q1, q2] if a[:4] == '_anc'})
+            total_anc += len({a for a in [q1, q2] if a[:4] == '_anc'})
     return qubo
 
 
