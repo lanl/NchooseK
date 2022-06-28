@@ -52,7 +52,7 @@ def construct_qubo(env, hard_scale):
     return qubo
 
 
-class Result(object):
+class Result():
     'Encapsulate solver results and related data.'
 
     def __init__(self):
@@ -76,9 +76,11 @@ class Result(object):
         if self.qubits:
             ret["qubits"] = self.qubits
         if self.depth:
-            ret["depth"] = self.depth
+            ret["circuit depth"] = self.depth
         if self.times:
             ret["times"] = self.times
+        if self.jobIDs:
+            ret["jobs IDs"] = self.jobIDs
         if self.quantum_instance:
             ret["Qiskit backend"] = self.quantum_instance.backend
         return 'nchoosek.solver.Result(%s)' % str(ret)
@@ -95,10 +97,12 @@ class Result(object):
         if self.qubits:
             ret["qubits"] = self.qubits
         if self.depth:
-            ret["depth"] = self.depth
+            ret["circuit depth"] = self.depth
         if self.times:
             ret["times"] = (self.times[0].strftime("%Y-%m-%d %H:%M:%S.%f"),
                             self.times[1].strftime("%Y-%m-%d %H:%M:%S.%f"))
+        if self.jobIDs:
+            ret["number of jobs"] = len(self.jobIDs)
         if self.quantum_instance:
             ret["Qiskit backend"] = self.quantum_instance.backend.name()
         return str(ret)
