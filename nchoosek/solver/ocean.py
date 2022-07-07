@@ -103,6 +103,7 @@ def solve(env, sampler=None, hard_scale=None, **sampler_args):
         res.append({k: v != 0 for k, v in it.sample.items() if k in ports})
         num.append(it.num_occurrences)
         en.append(it.energy)
+    ret.variables = env.ports()
     ret.solutions = res
     time2 = datetime.datetime.now()
     ret.times = (time1, time2)

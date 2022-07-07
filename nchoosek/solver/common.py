@@ -56,6 +56,7 @@ class Result():
     'Encapsulate solver results and related data.'
 
     def __init__(self):
+        self.variables = None
         self.solutions = None
         self.tallies = None
         self.energies = None
@@ -68,6 +69,8 @@ class Result():
     def _repr_dict(self):
         'Return a dictionary for use internally by __repr__.'
         ret = {}
+        if self.variables:
+            ret["variables"] = self.variables
         if self.solutions:
             ret["solutions"] = self.solutions
         if self.tallies:
@@ -91,6 +94,8 @@ class Result():
     def _str_dict(self):
         'Return a dictionary for use internally by __str__.'
         ret = {}
+        if self.variables:
+            ret["variables"] = len(self.variables)
         if self.solutions:
             ret["top solution"] = self.solutions[0]
             ret["number of solutions"] = len(self.solutions)

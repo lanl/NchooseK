@@ -48,6 +48,7 @@ def direct_solve(env):
         return None
     model = s.model()
     ret = Z3Result()
+    ret.variables = env.ports()
     ret.solutions = [{k: bool(model[v].as_long())
                       for k, v in nck_to_z3.items()}]
     time2 = datetime.datetime.now()
@@ -85,7 +86,8 @@ def qubo_solve(env, hard_scale):
     if s.check() != z3.sat:
         return None
     model = s.model()
-    ret = solver.Result()
+    ret = Z3Result()
+    ret.variables = env.ports()
     ret.solutions = [{k: bool(model[v].as_long())
                       for k, v in nck_to_z3.items()}]
     return ret

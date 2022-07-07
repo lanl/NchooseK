@@ -54,7 +54,7 @@ def solve(env, quantum_instance=None, hard_scale=None, optimizer=COBYLA()):
                                  quantum_instance=quantum_instance))
     result = qaoa.solve(prog)
     ret = QiskitResult()
-
+    ret.variables = env.ports()
     ret.solutions = []
     ret.solutions.append({k: v != 0
                           for k, v in result.variables_dict.items()
@@ -64,8 +64,4 @@ def solve(env, quantum_instance=None, hard_scale=None, optimizer=COBYLA()):
     ret.times = (time1, time2)
     ret.tallies = [1]
     ret.quantum_instance = quantum_instance
-
-    # Convert the result to a mapping from port names to Booleans and
-    # return it.
-    ports = env.ports()
     return ret
