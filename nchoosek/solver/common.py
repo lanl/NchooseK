@@ -65,7 +65,8 @@ class Result():
         self.times = None
         self.quantum_instance = None
 
-    def __repr__(self):
+    def _repr_dict(self):
+        'Return a dictionary for use internally by __repr__.'
         ret = {}
         if self.solutions:
             ret["solutions"] = self.solutions
@@ -81,11 +82,14 @@ class Result():
             ret["times"] = self.times
         if self.jobIDs:
             ret["jobs IDs"] = self.jobIDs
-        if self.quantum_instance:
-            ret["Qiskit backend"] = self.quantum_instance.backend
+        return ret
+
+    def __repr__(self):
+        ret = self._repr_dict()
         return 'nchoosek.solver.Result(%s)' % str(ret)
 
-    def __str__(self):
+    def _str_dict(self):
+        'Return a dictionary for use internally by __str__.'
         ret = {}
         if self.solutions:
             ret["top solution"] = self.solutions[0]
@@ -103,8 +107,10 @@ class Result():
                             self.times[1].strftime("%Y-%m-%d %H:%M:%S.%f"))
         if self.jobIDs:
             ret["number of jobs"] = len(self.jobIDs)
-        if self.quantum_instance:
-            ret["Qiskit backend"] = self.quantum_instance.backend.name()
+        return ret
+
+    def __str__(self):
+        ret = self._str_dict()
         return str(ret)
 
     def details(self):

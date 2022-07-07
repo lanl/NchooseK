@@ -3,15 +3,33 @@
 # the variables in an NchooseK environment      #
 #################################################
 
-from nchoosek import solver
-from nchoosek.solver import construct_qubo
-import qiskit
 import datetime
+import qiskit
 from qiskit_optimization import QuadraticProgram
 from qiskit_optimization.algorithms import MinimumEigenOptimizer
 from qiskit.algorithms import QAOA
 from qiskit.algorithms.optimizers import COBYLA
 from qiskit.utils import QuantumInstance
+from nchoosek import solver
+from nchoosek.solver import construct_qubo
+
+
+class QiskitResult(solver.Result):
+    'Add Qiskit-specific fields to a Result.'
+
+    def __init__(self):
+        super().__init__()
+        self.quantum_instance = None
+
+    def __repr__(self):
+        ret = self._repr_dict()
+        ret["Qiskit backend"] = self.quantum_instance.backend
+        return 'nchoosek.solver.Result(%s)' % str(ret)
+
+    def __str__(self):
+        ret = self._str_dict()
+        ret["Qiskit backend"] = self.quantum_instance.backend.name()
+        return str(ret)
 
 
 def solve(env, quantum_instance=None, hard_scale=None, optimizer=COBYLA()):
@@ -35,7 +53,7 @@ def solve(env, quantum_instance=None, hard_scale=None, optimizer=COBYLA()):
     qaoa = MinimumEigenOptimizer(QAOA(optimizer=optimizer, reps=1,
                                  quantum_instance=quantum_instance))
     result = qaoa.solve(prog)
-    ret = solver.Result()
+    ret = QiskitResult()
 
     ret.solutions = []
     ret.solutions.append({k: v != 0

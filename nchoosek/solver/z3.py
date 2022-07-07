@@ -4,10 +4,14 @@
 # an NchooseK environment            #
 ######################################
 
+import datetime
+import z3
 from nchoosek import solver
 from nchoosek.solver import construct_qubo
-import z3
-import datetime
+
+
+class Z3Result(solver.Result):
+    'Add Z3-specific fields to a Result.'
 
 
 def direct_solve(env):
@@ -33,8 +37,8 @@ def direct_solve(env):
         else:
             # Multiple k values
             disj = z3.BoolVector('disj%d' % i, len(nts))
-            for i, nt in enumerate(nts):
-                disj[i] = z3.Sum(ps) == nt
+            for j, nt in enumerate(nts):
+                disj[j] = z3.Sum(ps) == nt
             adder(z3.Or(disj))
 
     # Solve the system of constraints, and return a dictionary mapping port
@@ -43,7 +47,7 @@ def direct_solve(env):
     if s.check() != z3.sat:
         return None
     model = s.model()
-    ret = solver.Result()
+    ret = Z3Result()
     ret.solutions = [{k: bool(model[v].as_long())
                       for k, v in nck_to_z3.items()}]
     time2 = datetime.datetime.now()
@@ -81,7 +85,6 @@ def qubo_solve(env, hard_scale):
     if s.check() != z3.sat:
         return None
     model = s.model()
-    ports = env.ports()
     ret = solver.Result()
     ret.solutions = [{k: bool(model[v].as_long())
                       for k, v in nck_to_z3.items()}]
@@ -92,5 +95,4 @@ def solve(env, qubo=False, hard_scale=None):
     'Solve for the variables in a given NchooseK environment.'
     if qubo:
         return qubo_solve(env, hard_scale)
-    else:
-        return direct_solve(env)
+    return direct_solve(env)
