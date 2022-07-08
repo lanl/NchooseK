@@ -20,17 +20,72 @@ class QiskitResult(solver.Result):
     def __init__(self):
         super().__init__()
         self.quantum_instance = None
+        self._jobIDs = None
+        self._qubits = None
+        self._depth = None
+        self._computed_expensive = False
+
+    def _compute_expensive_values(self):
+        'Provide various values that require nontrivial time to compute.'
+        try:
+            device = self.quantum_instance.backend
+            jobs = device.jobs(limit=50,
+                               start_datetime=self.times[0],
+                               end_datetime=self.times[1])
+            qasm = jobs[2].circuits()[0].qasm()
+            count = 0
+            # Qiskit jobs don't tell you how many physical qubits get used;
+            # we need to search through the final qasm.
+            for i in range(device.configuration().n_qubits):
+                if re.search(r"cx[^;]*q\[" + str(i) + r"\]", qasm) or \
+                   re.search(r"rz\([^\(]*\) q\[" + str(i) + r"\]", qasm):
+                    count += 1
+
+            self._jobIDs = []
+            for job in jobs:
+                self._jobIDs.append(job.job_id())
+            self._qubits = count
+            self._depth = jobs[2].circuits()[0].depth()
+        except AttributeError:
+            # Qiskit's local simulator lacks a jobs field.
+            pass
+        self._computed_expensive = True
+
+    @property
+    def qubits(self):
+        if not self._computed_expensive:
+            self._compute_expensive_values()
+        return self._qubits
+
+    @property
+    def jobIDs(self):
+        if not self._computed_expensive:
+            self._compute_expensive_values()
+        return self._jobIDs
+
+    @property
+    def depth(self):
+        if not self._computed_expensive:
+            self._compute_expensive_values()
+        return self._depth
 
     def __repr__(self):
         ret = self._repr_dict()
         ret["Qiskit backend"] = self.quantum_instance.backend
+        if self.jobIDs:
+            ret["number of jobs"] = len(self.jobIDs)
+        if self.depth:
+            ret["circuit depth"] = self.depth
         return 'nchoosek.solver.Result(%s)' % str(ret)
 
     def __str__(self):
         ret = self._str_dict()
         ret["Qiskit backend"] = self.quantum_instance.backend.name()
+        if self.jobIDs:
+            ret["number of jobs"] = len(self.jobIDs)
+        if self.depth:
+            ret["circuit depth"] = self.depth
         return str(ret)
-
 
 def solve(env, quantum_instance=None, hard_scale=None, optimizer=COBYLA()):
     # If there is no quantum_instance given, run it on a simulator on the

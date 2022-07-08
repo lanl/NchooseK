@@ -60,9 +60,6 @@ class Result():
         self.solutions = None
         self.tallies = None
         self.energies = None
-        self.jobIDs = None
-        self.qubits = None
-        self.depth = None
         self.times = None
         self.quantum_instance = None
 
@@ -79,12 +76,8 @@ class Result():
             ret["energies"] = self.energies
         if self.qubits:
             ret["qubits"] = self.qubits
-        if self.depth:
-            ret["circuit depth"] = self.depth
         if self.times:
             ret["times"] = self.times
-        if self.jobIDs:
-            ret["jobs IDs"] = self.jobIDs
         return ret
 
     def __repr__(self):
@@ -105,40 +98,11 @@ class Result():
             ret["top solution energy"] = self.energies[0]
         if self.qubits:
             ret["qubits"] = self.qubits
-        if self.depth:
-            ret["circuit depth"] = self.depth
         if self.times:
             ret["times"] = (self.times[0].strftime("%Y-%m-%d %H:%M:%S.%f"),
                             self.times[1].strftime("%Y-%m-%d %H:%M:%S.%f"))
-        if self.jobIDs:
-            ret["number of jobs"] = len(self.jobIDs)
         return ret
 
     def __str__(self):
         ret = self._str_dict()
         return str(ret)
-
-    def details(self):
-        if self.quantum_instance:
-            try:
-                device = self.quantum_instance.backend
-                jobs = device.jobs(limit=50,
-                                   start_datetime=self.times[0],
-                                   end_datetime=self.times[1])
-                qasm = jobs[2].circuits()[0].qasm()
-                count = 0
-                # Qiskit jobs don't tell you how many physical qubits get used;
-                # we need to search through the final qasm.
-                for i in range(device.configuration().n_qubits):
-                    if re.search(r"cx[^;]*q\[" + str(i) + r"\]", qasm) or \
-                       re.search(r"rz\([^\(]*\) q\[" + str(i) + r"\]", qasm):
-                        count += 1
-
-                self.jobIDs = []
-                for job in jobs:
-                    self.jobIDs.append(job.job_id())
-                self.qubits = count
-                self.depth = jobs[2].circuits()[0].depth()
-            except AttributeError:
-                # Qiskit's local simulator lacks a jobs field.
-                pass
