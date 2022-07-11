@@ -4,7 +4,6 @@
 #########################################
 
 from collections import defaultdict
-import re
 
 
 class ConstraintConversionError(Exception):
@@ -59,9 +58,8 @@ class Result():
         self.variables = None
         self.solutions = None
         self.tallies = None
-        self.energies = None
+        self.qubits = None
         self.times = None
-        self.quantum_instance = None
 
     def _repr_dict(self):
         'Return a dictionary for use internally by __repr__.'
@@ -72,10 +70,8 @@ class Result():
             ret["solutions"] = self.solutions
         if self.tallies:
             ret["tallies"] = self.tallies
-        if self.energies:
-            ret["energies"] = self.energies
         if self.qubits:
-            ret["qubits"] = self.qubits
+            ret["number of qubits"] = self.qubits
         if self.times:
             ret["times"] = self.times
         return ret
@@ -94,10 +90,8 @@ class Result():
             ret["number of solutions"] = len(self.solutions)
         if self.tallies:
             ret["top solution tallies"] = self.tallies[0]
-        if self.energies:
-            ret["top solution energy"] = self.energies[0]
         if self.qubits:
-            ret["qubits"] = self.qubits
+            ret["number of qubits"] = self.qubits
         if self.times:
             ret["times"] = (self.times[0].strftime("%Y-%m-%d %H:%M:%S.%f"),
                             self.times[1].strftime("%Y-%m-%d %H:%M:%S.%f"))

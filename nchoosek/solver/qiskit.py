@@ -4,6 +4,7 @@
 #################################################
 
 import datetime
+import re
 import qiskit
 from qiskit_optimization import QuadraticProgram
 from qiskit_optimization.algorithms import MinimumEigenOptimizer
@@ -56,6 +57,11 @@ class QiskitResult(solver.Result):
         if not self._computed_expensive:
             self._compute_expensive_values()
         return self._qubits
+
+    @qubits.setter
+    def qubits(self, value):
+        # This function exists so the base class can write "qubits = None".
+        pass
 
     @property
     def jobIDs(self):

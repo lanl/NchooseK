@@ -15,6 +15,7 @@ class OceanResult(solver.Result):
 
     def __init__(self):
         super().__init__()
+        self.energies = None
         self.sampler = None
         self.exec_info = None
 
