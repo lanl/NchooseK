@@ -4,7 +4,6 @@
 #################################################
 
 import datetime
-import re
 import qiskit
 from qiskit_optimization import QuadraticProgram
 from qiskit_optimization.algorithms import MinimumEigenOptimizer
@@ -33,20 +32,16 @@ class QiskitResult(solver.Result):
             jobs = device.jobs(limit=50,
                                start_datetime=self.times[0],
                                end_datetime=self.times[1])
-            qasm = jobs[2].circuits()[0].qasm()
-            count = 0
             # Qiskit jobs don't tell you how many physical qubits get used;
-            # we need to search through the final qasm.
-            for i in range(device.configuration().n_qubits):
-                if re.search(r"cx[^;]*q\[" + str(i) + r"\]", qasm) or \
-                   re.search(r"rz\([^\(]*\) q\[" + str(i) + r"\]", qasm):
-                    count += 1
-
+            # we need to tally these ourself.
+            circ = jobs[2].circuits()[0]  # 1st circuit of a representative job
+            self._qubits = len({q
+                                for d in circ.data
+                                for q in d[1]})
             self._jobIDs = []
             for job in jobs:
                 self._jobIDs.append(job.job_id())
-            self._qubits = count
-            self._depth = jobs[2].circuits()[0].depth()
+            self._depth = circ.depth()
         except AttributeError:
             # Qiskit's local simulator lacks a jobs field.
             pass
@@ -54,6 +49,7 @@ class QiskitResult(solver.Result):
 
     @property
     def qubits(self):
+        'Return the number of physical qubits used.'
         if not self._computed_expensive:
             self._compute_expensive_values()
         return self._qubits
@@ -65,12 +61,14 @@ class QiskitResult(solver.Result):
 
     @property
     def jobIDs(self):
+        'Return a list of job IDs.'
         if not self._computed_expensive:
             self._compute_expensive_values()
         return self._jobIDs
 
     @property
     def depth(self):
+        'Return the circuit depth.'
         if not self._computed_expensive:
             self._compute_expensive_values()
         return self._depth
@@ -94,6 +92,7 @@ class QiskitResult(solver.Result):
         return str(ret)
 
 def solve(env, quantum_instance=None, hard_scale=None, optimizer=COBYLA()):
+    'Solve an NchooseK problem, returning a QiskitResult.'
     # If there is no quantum_instance given, run it on a simulator on the
     # computer running the program.
     if not quantum_instance:
