@@ -37,6 +37,7 @@ class QiskitResult(solver.Result):
             circ = jobs[2].circuits()[0]  # 1st circuit of a representative job
             self._qubits = len({q
                                 for d in circ.data
+                                if d[0].name != 'barrier'
                                 for q in d[1]})
             self._jobIDs = []
             for job in jobs:

@@ -84,7 +84,7 @@ class Result():
         'Return a dictionary for use internally by __str__.'
         ret = {}
         if self.variables:
-            ret["variables"] = len(self.variables)
+            ret["number of variables"] = len(self.variables)
         if self.solutions:
             ret["top solution"] = self.solutions[0]
             ret["number of solutions"] = len(self.solutions)
