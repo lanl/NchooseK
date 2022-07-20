@@ -5,6 +5,8 @@
 
 import copy
 import datetime
+import warnings
+import dimod
 from dwave.system import DWaveSampler, EmbeddingComposite
 from nchoosek import solver
 from nchoosek.solver import construct_qubo
@@ -89,10 +91,20 @@ def solve(env, sampler=None, hard_scale=None, **sampler_args):
     # Convert the environment to a QUBO.
     qubo = construct_qubo(env, hard_scale)
 
-    time1 = datetime.datetime.now()
+    # Remove arguments that the sampler doesn't recognize.
+    with warnings.catch_warnings():
+        warnings.filterwarnings('ignore')
+        try:
+            kwargs = sampler_args.copy()
+            kwargs['return_embedding'] = True
+            kwargs = sampler.remove_unknown_kwargs(**sampler_args)
+        except dimod.exceptions.SamplerUnknownArgWarning:
+            pass
+
     # Solve the QUBO using the given sampler.
+    time1 = datetime.datetime.now()
     ret = OceanResult()
-    result = sampler.sample_qubo(qubo, return_embedding=True, **sampler_args)
+    result = sampler.sample_qubo(qubo, **kwargs)
 
     # Convert the result to a mapping from port names to Booleans and
     # record it, the number of occurences, and the energies.
