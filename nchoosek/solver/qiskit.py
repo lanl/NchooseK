@@ -93,13 +93,47 @@ class QiskitResult(solver.Result):
             ret["circuit depth"] = self.depth
         return str(ret)
 
+def _construct_quantum_instance(desc):
+    'Construct a QuantumInstance from a a string description.'
+    if qiskit.IBMQ.active_account() is None:
+        qiskit.IBMQ.load_account()
+    fields = desc.split('/')
+    hub, group, project, system = None, None, None, None
+    nf = len(fields)
+    if nf >= 1 and fields[-1] != '*':
+        system = fields[-1]
+    if nf >= 2 and fields[-2] != '*':
+        project = fields[-2]
+    if nf >= 3 and fields[-3] != '*':
+        group = fields[-3]
+    if nf >= 4 and fields[-4] != '*':
+        hub = fields[-4]
+    if nf >= 5:
+        raise ValueError('QuantumInstance must be of the form hub/group/project/system')
+    providers = qiskit.IBMQ.providers(hub=hub, group=group, project=project)
+    backend = None
+    for provider in providers:
+        if system is None:
+            backend = qiskit.providers.ibmq.least_busy(provider.backends())
+            break
+        backends = provider.backends(name=system)
+        if len(backends) > 0:
+            backend = backends[0]
+            break
+    if backend is None:
+        raise RuntimeError('Failed to find a quantum backend described by "%s"' % desc)
+    return QuantumInstance(backend)
+
 def solve(env, quantum_instance=None, hard_scale=None, optimizer=COBYLA()):
     'Solve an NchooseK problem, returning a QiskitResult.'
-    # If there is no quantum_instance given, run it on a simulator on the
-    # computer running the program.
+    # If no quantum_instance was given, run the circuit on a local
+    # simulator.  If a quantum_instances was provided as a string,
+    # construct a QuantumInstance based on that string's specification.
     if not quantum_instance:
         backend = qiskit.Aer.get_backend('qasm_simulator')
         quantum_instance = QuantumInstance(backend)
+    elif type(quantum_instance) == str:
+        quantum_instance = _construct_quantum_instance(quantum_instance)
 
     # Convert the environment to a QUBO.
     qubo = construct_qubo(env, hard_scale)
