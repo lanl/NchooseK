@@ -119,7 +119,7 @@ def solve(env, sampler=None, hard_scale=None, **sampler_args):
     ret.variables = env.ports()
     ret.solutions = res
     time2 = datetime.datetime.now()
-    ret.times = (time1, time2)
+    ret.solver_times = (time1, time2)
     ret.tallies = num
     ret.energies = en
     ret.sampler = sampler

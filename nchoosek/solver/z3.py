@@ -47,12 +47,12 @@ def direct_solve(env):
     if s.check() != z3.sat:
         return None
     model = s.model()
+    time2 = datetime.datetime.now()
     ret = Z3Result()
     ret.variables = env.ports()
     ret.solutions = [{k: bool(model[v].as_long())
                       for k, v in nck_to_z3.items()}]
-    time2 = datetime.datetime.now()
-    ret.times = (time1, time2)
+    ret.solver_times = (time1, time2)
     return ret
 
 
@@ -70,7 +70,7 @@ def qubo_solve(env, hard_scale):
     for v in nck_to_z3.values():
         s.add(v >= 0, v <= 1)
 
-    # Minimize the sum of all constraints in the QUBO.
+    # Specify that we want to minimize the sum of all constraints in the QUBO.
     obj = 0
     for (q0, q1), wt in qubo.items():
         if q0 == q1:
@@ -83,10 +83,13 @@ def qubo_solve(env, hard_scale):
 
     # Minimize the objective function subject to the constraints, and
     # return a dictionary mapping port names to Boolean values.
+    time1 = datetime.datetime.now()
     if s.check() != z3.sat:
         return None
     model = s.model()
+    time2 = datetime.datetime.now()
     ret = Z3Result()
+    ret.solver_times = (time1, time2)
     ret.variables = env.ports()
     ret.solutions = [{k: bool(model[v].as_long())
                       for k, v in nck_to_z3.items()}]

@@ -30,8 +30,8 @@ class QiskitResult(solver.Result):
         try:
             device = self.quantum_instance.backend
             jobs = device.jobs(limit=50,
-                               start_datetime=self.times[0],
-                               end_datetime=self.times[1])
+                               start_datetime=self.solver_times[0],
+                               end_datetime=self.solver_times[1])
             # Qiskit jobs don't tell you how many physical qubits get used;
             # we need to tally these ourself.
             jnum = len(jobs)//2   # Representative job (last should be avoided)
@@ -132,7 +132,7 @@ def solve(env, quantum_instance=None, hard_scale=None, optimizer=COBYLA(), reps=
     if not quantum_instance:
         backend = qiskit.Aer.get_backend('qasm_simulator')
         quantum_instance = QuantumInstance(backend)
-    elif type(quantum_instance) == str:
+    elif isinstance(quantum_instance, str):
         quantum_instance = _construct_quantum_instance(quantum_instance)
 
     # Convert the environment to a QUBO.
@@ -145,7 +145,7 @@ def solve(env, quantum_instance=None, hard_scale=None, optimizer=COBYLA(), reps=
     prog.minimize(quadratic=qubo)
 
     time1 = datetime.datetime.now()
-    # This runs the problem as a QAOA.
+    # This runs the problem with QAOA.
     qaoa = MinimumEigenOptimizer(QAOA(optimizer=optimizer, reps=reps,
                                  initial_point=initial_point,
                                  callback=callback,
@@ -159,7 +159,7 @@ def solve(env, quantum_instance=None, hard_scale=None, optimizer=COBYLA(), reps=
                           if k in env.ports()})
     # Record this time now to ensure that the QAOA is done running first.
     time2 = datetime.datetime.now()
-    ret.times = (time1, time2)
+    ret.solver_times = (time1, time2)
     ret.tallies = [1]
     ret.quantum_instance = quantum_instance
     return ret
