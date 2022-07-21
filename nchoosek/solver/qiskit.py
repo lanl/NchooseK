@@ -91,7 +91,7 @@ class QiskitResult(solver.Result):
             ret["circuit depth"] = self.depth
         return str(ret)
 
-def solve(env, quantum_instance=None, hard_scale=None, optimizer=COBYLA()):
+def solve(env, quantum_instance=None, hard_scale=None, optimizer=COBYLA(), reps=1, initial_point=None, callback=None):
     'Solve an NchooseK problem, returning a QiskitResult.'
     # If there is no quantum_instance given, run it on a simulator on the
     # computer running the program.
@@ -110,7 +110,9 @@ def solve(env, quantum_instance=None, hard_scale=None, optimizer=COBYLA()):
 
     time1 = datetime.datetime.now()
     # This runs the problem as a QAOA.
-    qaoa = MinimumEigenOptimizer(QAOA(optimizer=optimizer, reps=1,
+    qaoa = MinimumEigenOptimizer(QAOA(optimizer=optimizer, reps=reps,
+                                 initial_point=initial_point,
+                                 callback=callback,
                                  quantum_instance=quantum_instance))
     result = qaoa.solve(prog)
     ret = QiskitResult()
