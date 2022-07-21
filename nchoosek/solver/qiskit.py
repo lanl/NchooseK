@@ -34,7 +34,8 @@ class QiskitResult(solver.Result):
                                end_datetime=self.times[1])
             # Qiskit jobs don't tell you how many physical qubits get used;
             # we need to tally these ourself.
-            circ = jobs[2].circuits()[0]  # 1st circuit of a representative job
+            jnum = len(jobs)//2   # Representative job (last should be avoided)
+            circ = jobs[jnum].circuits()[0]  # 1st circuit of a representative job
             self._qubits = len({q
                                 for d in circ.data
                                 if d[0].name != 'barrier'
