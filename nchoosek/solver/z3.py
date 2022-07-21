@@ -43,16 +43,16 @@ def direct_solve(env):
 
     # Solve the system of constraints, and return a dictionary mapping port
     # names to Boolean values.
-    time1 = datetime.datetime.now()
+    stime1 = datetime.datetime.now()
     if s.check() != z3.sat:
         return None
     model = s.model()
-    time2 = datetime.datetime.now()
+    stime2 = datetime.datetime.now()
     ret = Z3Result()
     ret.variables = env.ports()
     ret.solutions = [{k: bool(model[v].as_long())
                       for k, v in nck_to_z3.items()}]
-    ret.solver_times = (time1, time2)
+    ret.solver_times = (stime1, stime2)
     return ret
 
 
@@ -61,7 +61,9 @@ def qubo_solve(env, hard_scale):
     expressing the constraints as a QUBO then converting that to Z3 for
     solution.'''
     # Convert the environment to a QUBO.
+    qtime1 = datetime.datetime.now()
     qubo = construct_qubo(env, hard_scale)
+    qtime2 = datetime.datetime.now()
 
     # Constrain all QUBO variables to be either 0 or 1.
     all_vars = {e for qs in qubo for e in qs}
@@ -83,13 +85,14 @@ def qubo_solve(env, hard_scale):
 
     # Minimize the objective function subject to the constraints, and
     # return a dictionary mapping port names to Boolean values.
-    time1 = datetime.datetime.now()
+    stime1 = datetime.datetime.now()
     if s.check() != z3.sat:
         return None
     model = s.model()
-    time2 = datetime.datetime.now()
+    stime2 = datetime.datetime.now()
     ret = Z3Result()
-    ret.solver_times = (time1, time2)
+    ret.qubo_times = (qtime1, qtime2)
+    ret.solver_times = (stime1, stime2)
     ret.variables = env.ports()
     ret.solutions = [{k: bool(model[v].as_long())
                       for k, v in nck_to_z3.items()}]

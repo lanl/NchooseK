@@ -89,7 +89,9 @@ def solve(env, sampler=None, hard_scale=None, **sampler_args):
         sampler = EmbeddingComposite(DWaveSampler())
 
     # Convert the environment to a QUBO.
+    qtime1 = datetime.datetime.now()
     qubo = construct_qubo(env, hard_scale)
+    qtime2 = datetime.datetime.now()
 
     # Remove arguments that the sampler doesn't recognize.
     with warnings.catch_warnings():
@@ -102,9 +104,9 @@ def solve(env, sampler=None, hard_scale=None, **sampler_args):
             pass
 
     # Solve the QUBO using the given sampler.
-    time1 = datetime.datetime.now()
-    ret = OceanResult()
+    stime1 = datetime.datetime.now()
     result = sampler.sample_qubo(qubo, **kwargs)
+    stime2 = datetime.datetime.now()
 
     # Convert the result to a mapping from port names to Booleans and
     # record it, the number of occurences, and the energies.
@@ -116,10 +118,11 @@ def solve(env, sampler=None, hard_scale=None, **sampler_args):
         res.append({k: v != 0 for k, v in it.sample.items() if k in ports})
         num.append(it.num_occurrences)
         en.append(it.energy)
+    ret = OceanResult()
     ret.variables = env.ports()
     ret.solutions = res
-    time2 = datetime.datetime.now()
-    ret.solver_times = (time1, time2)
+    ret.qubo_times = (qtime1, qtime2)
+    ret.solver_times = (stime1, stime2)
     ret.tallies = num
     ret.energies = en
     ret.sampler = sampler

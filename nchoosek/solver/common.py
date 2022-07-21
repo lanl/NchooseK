@@ -59,6 +59,7 @@ class Result():
         self.solutions = None
         self.tallies = None
         self.qubits = None
+        self.qubo_times = None
         self.solver_times = None
 
     def _repr_dict(self):
@@ -72,6 +73,8 @@ class Result():
             ret["tallies"] = self.tallies
         if self.qubits:
             ret["number of qubits"] = self.qubits
+        if self.qubo_times:
+            ret["qubo times"] = self.solver_times
         if self.solver_times:
             ret["solver times"] = self.solver_times
         return ret
@@ -92,6 +95,9 @@ class Result():
             ret["top solution tallies"] = self.tallies[0]
         if self.qubits:
             ret["number of qubits"] = self.qubits
+        if self.qubo_times:
+            ret["qubo times"] = (self.qubo_times[0].strftime("%Y-%m-%d %H:%M:%S.%f"),
+                                 self.qubo_times[1].strftime("%Y-%m-%d %H:%M:%S.%f"))
         if self.solver_times:
             ret["solver times"] = (self.solver_times[0].strftime("%Y-%m-%d %H:%M:%S.%f"),
                                    self.solver_times[1].strftime("%Y-%m-%d %H:%M:%S.%f"))

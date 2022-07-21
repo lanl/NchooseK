@@ -124,7 +124,8 @@ def _construct_quantum_instance(desc):
         raise RuntimeError('Failed to find a quantum backend described by "%s"' % desc)
     return QuantumInstance(backend)
 
-def solve(env, quantum_instance=None, hard_scale=None, optimizer=COBYLA(), reps=1, initial_point=None, callback=None):
+def solve(env, quantum_instance=None, hard_scale=None, optimizer=COBYLA(),
+          reps=1, initial_point=None, callback=None):
     'Solve an NchooseK problem, returning a QiskitResult.'
     # If no quantum_instance was given, run the circuit on a local
     # simulator.  If a quantum_instances was provided as a string,
@@ -136,7 +137,9 @@ def solve(env, quantum_instance=None, hard_scale=None, optimizer=COBYLA(), reps=
         quantum_instance = _construct_quantum_instance(quantum_instance)
 
     # Convert the environment to a QUBO.
+    qtime1 = datetime.datetime.now()
     qubo = construct_qubo(env, hard_scale)
+    qtime2 = datetime.datetime.now()
 
     # Set up a QuadraticProgram for Qiskit.
     prog = QuadraticProgram('nck')
@@ -144,13 +147,14 @@ def solve(env, quantum_instance=None, hard_scale=None, optimizer=COBYLA(), reps=
         prog.binary_var(var)
     prog.minimize(quadratic=qubo)
 
-    time1 = datetime.datetime.now()
-    # This runs the problem with QAOA.
+    # Run the problem with QAOA.
+    stime1 = datetime.datetime.now()
     qaoa = MinimumEigenOptimizer(QAOA(optimizer=optimizer, reps=reps,
                                  initial_point=initial_point,
                                  callback=callback,
                                  quantum_instance=quantum_instance))
     result = qaoa.solve(prog)
+    stime2 = datetime.datetime.now()
     ret = QiskitResult()
     ret.variables = env.ports()
     ret.solutions = []
@@ -158,8 +162,8 @@ def solve(env, quantum_instance=None, hard_scale=None, optimizer=COBYLA(), reps=
                           for k, v in result.variables_dict.items()
                           if k in env.ports()})
     # Record this time now to ensure that the QAOA is done running first.
-    time2 = datetime.datetime.now()
-    ret.solver_times = (time1, time2)
+    ret.qubo_times = (qtime1, qtime2)
+    ret.solver_times = (stime1, stime2)
     ret.tallies = [1]
     ret.quantum_instance = quantum_instance
     return ret
