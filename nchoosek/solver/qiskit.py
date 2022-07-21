@@ -124,7 +124,7 @@ def _construct_quantum_instance(desc):
         raise RuntimeError('Failed to find a quantum backend described by "%s"' % desc)
     return QuantumInstance(backend)
 
-def solve(env, quantum_instance=None, hard_scale=None, optimizer=COBYLA()):
+def solve(env, quantum_instance=None, hard_scale=None, optimizer=COBYLA(), reps=1, initial_point=None, callback=None):
     'Solve an NchooseK problem, returning a QiskitResult.'
     # If no quantum_instance was given, run the circuit on a local
     # simulator.  If a quantum_instances was provided as a string,
@@ -146,7 +146,9 @@ def solve(env, quantum_instance=None, hard_scale=None, optimizer=COBYLA()):
 
     time1 = datetime.datetime.now()
     # This runs the problem as a QAOA.
-    qaoa = MinimumEigenOptimizer(QAOA(optimizer=optimizer, reps=1,
+    qaoa = MinimumEigenOptimizer(QAOA(optimizer=optimizer, reps=reps,
+                                 initial_point=initial_point,
+                                 callback=callback,
                                  quantum_instance=quantum_instance))
     result = qaoa.solve(prog)
     ret = QiskitResult()
