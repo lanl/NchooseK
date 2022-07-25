@@ -24,23 +24,35 @@ def rename_ancilla(name, inc):
 
 def construct_qubo(env, hard_scale):
     'Convert an entire environment to a QUBO.'
-    # Scale the weight of hard constraints by either a user-specified
-    # value or by an amount greater than the total weight of all soft
-    # constraints.
-    if hard_scale is None:
-        # A hard constraint is worth 1 more than all soft constraints combined.
-        hard_scale = 1
-        for c in env.constraints():
+    # Convert each constraint to an independent QUBO.
+    cons2qubo = {}
+    have_soft = False
+    for c in env.constraints():
+        qqv, _, objs = c.solve_qubo()
+        if qqv is None:
+            raise ConstraintConversionError(str(c))
+        cons2qubo[c] = (qqv, objs)
+        have_soft = have_soft or c.soft
+
+    # Find the minimum hard-constraint gap and maximum soft-constraint gap.
+    # Scale hard constraints to make it more valuable to violate all soft
+    # constraints than a single hard constraint.
+    if hard_scale is None and have_soft:
+        min_hard = 2**30
+        sum_max_soft = 0
+        for c, (_, objs) in cons2qubo.items():
             if c.soft:
-                hard_scale += 1
+                sum_max_soft += objs[-1] - objs[0]
+            else:
+                min_hard = min(min_hard, objs[1] - objs[0])
+        hard_scale = sum_max_soft/min_hard + 1.0
+    if hard_scale is None:
+        hard_scale = 1.0
 
     # Merge all constraints into a single, large QUBO.
     qubo = defaultdict(lambda: 0)
     total_anc = 0   # Total number of ancillae across all constraints
-    for c in env.constraints():
-        qqv, _ = c.solve_qubo()
-        if qqv is None:
-            raise ConstraintConversionError(str(c))
+    for c, (qqv, _) in cons2qubo.items():
         for q1, q2, val in qqv:
             if not c.soft:
                 val *= hard_scale

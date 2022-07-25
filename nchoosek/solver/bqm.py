@@ -9,7 +9,7 @@ import itertools
 import z3
 
 
-class BQMMixin(object):
+class BQMMixin():
     'Mixin for an nchoosek.Constraint that converts the Constraint to a BQM'
 
     def _truth_table(self):
@@ -100,13 +100,31 @@ class BQMMixin(object):
                 idx += 1
         return qubo
 
+    def _compute_objectives(self, soln, na):
+        'Compute the objective function for each row of the truth table.'
+        # Consider in turn all 2**n possible variable assignments.
+        objs = set()   # Unique objective values
+        all_ports = self.port_list + ['_anc%d' % (i + 1)
+                                      for i in range(na)]
+        nbits = len(all_ports)
+        for bits in range(2**nbits):
+            # Compute the objective value of the current variable assignment.
+            vals = {all_ports[i]: (bits>>i)&1 for i in range(nbits)}
+            o = 0
+            for v0, v1, wt in soln:
+                o += vals[v0]*vals[v1]*wt
+            objs.add(o)
+        return sorted(objs)
+
     def solve_qubo(self):
         '''Try increasing numbers of ancillae until the truth table can be
-        expressed in terms of a QUBO's linear and quadratic coefficients.'''
+        expressed in terms of a QUBO's linear and quadratic coefficients.
+        Return the solution (or None), the number of ancillae required, and
+        a sorted list of unique objective values.'''
         tt, col_info = self._truth_table()
         nc = len(col_info)
         for na in range(0, nc):
             soln = self._solve_ancillae(tt, col_info, na)
             if soln is not None:
-                return soln, na
-        return None, na
+                return soln, na, self._compute_objectives(soln, na)
+        return None, na, set()
