@@ -15,15 +15,29 @@ class QUBOCache():
     'Keep track of previously computed QUBOs.'
 
     def __init__(self):
-        # TODO: Use a database if NCHOOSEK_QUBO_CACHE is set.
-        self._qubo_cache = {}  # Map from column info to a QUBO
+        db_name = os.getenv('NCHOOSEK_QUBO_CACHE')
+        if db_name is None:
+            # Cache values in memory only.
+            self._qubo_cache = {}  # Map from column info to a QUBO
+        else:
+            # Create/open an on-disk database.
+            self._qubo_cache = dbm.open(db_name, 'c', 0o644)
+            print('@@@ DBM:', dbm.whichdb(db_name), '@@@')   # Temporary
+
+    def __del__(self):
+        try:
+            # On-disk database
+            self._qubo_cache.close()
+        except AttributeError:
+            # In-memory database
+            pass
 
     def __getitem__(self, col_info):
         sorted_info = sorted(col_info, key=lambda k: (k[1], k[0]))
         vars2vs = {var[0]: 'v%d' % i for i, var in enumerate(sorted_info)}
         key = json.dumps(sorted([(vars2vs[var], cnt)
                                  for var, cnt in col_info]))
-        qubo, na, objs = self._qubo_cache[key]
+        qubo, na, objs = json.loads(self._qubo_cache[key])
         vs2vars = {'v%d' % i: var[0] for i, var in enumerate(sorted_info)}
         soln = [(vs2vars[v1], vs2vars[v2], wt) for v1, v2, wt in qubo]
         return soln, na, objs
@@ -35,7 +49,8 @@ class QUBOCache():
                                  for var, cnt in col_info]))
         soln, na, objs = value
         qubo = [(vars2vs[v1], vars2vs[v2], wt) for v1, v2, wt in soln]
-        self._qubo_cache[key] = (qubo, na, objs)
+        self._qubo_cache[key] = json.dumps((qubo, na, objs))
+
 
 class BQMMixin():
     'Mixin for an nchoosek.Constraint that converts the Constraint to a BQM'
@@ -157,7 +172,7 @@ class BQMMixin():
         try:
             # We already processed a similar constraint.
             soln, na, objs = self._qubo_cache[col_info]
-            print('@@@ CACHE HIT ON', col_info, objs, '@@@')  # Temporary
+            print('@@@ CACHE HIT ON', col_info, '@@@')   # Temporary
             return soln, na, objs
         except KeyError:
             # We've not yet seen a similar constraint.
@@ -167,6 +182,6 @@ class BQMMixin():
                 if soln is not None:
                     objs = self._compute_objectives(soln, na)
                     self._qubo_cache[col_info] = (soln, na, objs)
-                    print('@@@ CACHE MISS ON', col_info, objs, '@@@')  # Temporary
+                    print('@@@ CACHE MISS ON', col_info, '@@@')   # Temporary
                     return soln, na, objs
             return None, na, set()  # Control should never reach this point.
