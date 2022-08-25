@@ -5,12 +5,17 @@
 ########################################
 
 from collections import defaultdict
+import dbm
+import json
 import itertools
+import os
 import z3
 
 
 class BQMMixin():
     'Mixin for an nchoosek.Constraint that converts the Constraint to a BQM'
+
+    _qubo_cache = {}  # Map from column info to a QUBO
 
     def _truth_table(self):
         "Convert a Constraint's ports to a truth table."
@@ -28,10 +33,19 @@ class BQMMixin():
         tt = itertools.product(*[[0, 1]]*len(port_tally))
         return list(tt), col_info
 
+    def _map_variable_names(self, col_info):
+        '''Associate all variables with generic names.  Return a forward and
+        a reverse mapping.'''
+        sorted_info = sorted(col_info, key=lambda k: (k[1], k[0]))
+        old2new = {var[0]: 'v%d' % i for i, var in enumerate(sorted_info)}
+        new2old = {'v%d' % i: var[0] for i, var in enumerate(sorted_info)}
+        return old2new, new2old
+
     def _solve_ancillae(self, tt, col_info, na):
         'Solve for QUBO coefficients given a number of ancillae.'
         nc = len(col_info)     # Number of columns, no ancillae
         tnc = nc + na          # Total number of columns including ancillae
+        all_valids = []        # Each row's validity
 
         # Create a Z3 solver.
         s = z3.Solver()
@@ -66,6 +80,7 @@ class BQMMixin():
             # Determine if the row honors the constraints.
             valid = sum([b*col_info[i][1]
                          for i, b in enumerate(row)]) in self.num_true
+            all_valids.append(valid)
             if valid:
                 # Valid row: exactly one ancilla combination results in a
                 # ground state; the rest result in an excited state.
@@ -122,9 +137,25 @@ class BQMMixin():
         Return the solution (or None), the number of ancillae required, and
         a sorted list of unique objective values.'''
         tt, col_info = self._truth_table()
-        nc = len(col_info)
-        for na in range(0, nc):
-            soln = self._solve_ancillae(tt, col_info, na)
-            if soln is not None:
-                return soln, na, self._compute_objectives(soln, na)
-        return None, na, set()
+        old2new, new2old = self._map_variable_names(col_info)
+        key = json.dumps(sorted([(old2new[var], cnt)
+                                 for var, cnt in col_info]))
+        try:
+            # We already processed a similar constraint.
+            qubo, na, objs = self._qubo_cache[key]
+            soln = [(new2old[v1], new2old[v2], wt) for v1, v2, wt in qubo]
+            print('@@@ CACHE HIT ON', key, '@@@')  # Temporary
+            return soln, na, objs
+        except KeyError:
+            # We've not yet seen a similar constraint.
+            print('@@@ CACHE MISS ON', key, '@@@')  # Temporary
+            nc = len(col_info)
+            for na in range(0, nc):
+                soln = self._solve_ancillae(tt, col_info, na)
+                if soln is not None:
+                    objs = self._compute_objectives(soln, na)
+                    qubo = [(old2new[v1], old2new[v2], wt)
+                            for v1, v2, wt in soln]
+                    self._qubo_cache[key] = (qubo, na, objs)
+                    return soln, na, objs
+            return None, na, set()  # Control should never reach this point.
