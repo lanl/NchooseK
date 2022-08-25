@@ -11,11 +11,36 @@ import itertools
 import os
 import z3
 
+class QUBOCache():
+    'Keep track of previously computed QUBOs.'
+
+    def __init__(self):
+        # TODO: Use a database if NCHOOSEK_QUBO_CACHE is set.
+        self._qubo_cache = {}  # Map from column info to a QUBO
+
+    def __getitem__(self, col_info):
+        sorted_info = sorted(col_info, key=lambda k: (k[1], k[0]))
+        vars2vs = {var[0]: 'v%d' % i for i, var in enumerate(sorted_info)}
+        key = json.dumps(sorted([(vars2vs[var], cnt)
+                                 for var, cnt in col_info]))
+        qubo, na, objs = self._qubo_cache[key]
+        vs2vars = {'v%d' % i: var[0] for i, var in enumerate(sorted_info)}
+        soln = [(vs2vars[v1], vs2vars[v2], wt) for v1, v2, wt in qubo]
+        return soln, na, objs
+
+    def __setitem__(self, col_info, value):
+        sorted_info = sorted(col_info, key=lambda k: (k[1], k[0]))
+        vars2vs = {var[0]: 'v%d' % i for i, var in enumerate(sorted_info)}
+        key = json.dumps(sorted([(vars2vs[var], cnt)
+                                 for var, cnt in col_info]))
+        soln, na, objs = value
+        qubo = [(vars2vs[v1], vars2vs[v2], wt) for v1, v2, wt in soln]
+        self._qubo_cache[key] = (qubo, na, objs)
 
 class BQMMixin():
     'Mixin for an nchoosek.Constraint that converts the Constraint to a BQM'
 
-    _qubo_cache = {}  # Map from column info to a QUBO
+    _qubo_cache = QUBOCache()  # Memoization of previous QUBO computations
 
     def _truth_table(self):
         "Convert a Constraint's ports to a truth table."
@@ -32,14 +57,6 @@ class BQMMixin():
         # name plus the per-column name and tally information
         tt = itertools.product(*[[0, 1]]*len(port_tally))
         return list(tt), col_info
-
-    def _map_variable_names(self, col_info):
-        '''Associate all variables with generic names.  Return a forward and
-        a reverse mapping.'''
-        sorted_info = sorted(col_info, key=lambda k: (k[1], k[0]))
-        old2new = {var[0]: 'v%d' % i for i, var in enumerate(sorted_info)}
-        new2old = {'v%d' % i: var[0] for i, var in enumerate(sorted_info)}
-        return old2new, new2old
 
     def _solve_ancillae(self, tt, col_info, na):
         'Solve for QUBO coefficients given a number of ancillae.'
@@ -137,25 +154,19 @@ class BQMMixin():
         Return the solution (or None), the number of ancillae required, and
         a sorted list of unique objective values.'''
         tt, col_info = self._truth_table()
-        old2new, new2old = self._map_variable_names(col_info)
-        key = json.dumps(sorted([(old2new[var], cnt)
-                                 for var, cnt in col_info]))
         try:
             # We already processed a similar constraint.
-            qubo, na, objs = self._qubo_cache[key]
-            soln = [(new2old[v1], new2old[v2], wt) for v1, v2, wt in qubo]
-            print('@@@ CACHE HIT ON', key, '@@@')  # Temporary
+            soln, na, objs = self._qubo_cache[col_info]
+            print('@@@ CACHE HIT ON', col_info, objs, '@@@')  # Temporary
             return soln, na, objs
         except KeyError:
             # We've not yet seen a similar constraint.
-            print('@@@ CACHE MISS ON', key, '@@@')  # Temporary
             nc = len(col_info)
             for na in range(0, nc):
                 soln = self._solve_ancillae(tt, col_info, na)
                 if soln is not None:
                     objs = self._compute_objectives(soln, na)
-                    qubo = [(old2new[v1], old2new[v2], wt)
-                            for v1, v2, wt in soln]
-                    self._qubo_cache[key] = (qubo, na, objs)
+                    self._qubo_cache[col_info] = (soln, na, objs)
+                    print('@@@ CACHE MISS ON', col_info, objs, '@@@')  # Temporary
                     return soln, na, objs
             return None, na, set()  # Control should never reach this point.
