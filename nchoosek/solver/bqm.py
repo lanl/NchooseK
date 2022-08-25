@@ -211,7 +211,6 @@ class BQMMixin():
         try:
             # We already processed a similar constraint.
             soln, na, objs = self._qubo_cache[(col_info, self.num_true)]
-            print('@@@ CACHE HIT ON', col_info, '@@@')   # Temporary
             return soln, na, objs
         except KeyError:
             # We've not yet seen a similar constraint.
@@ -222,6 +221,5 @@ class BQMMixin():
                     objs = self._compute_objectives(soln, na)
                     self._qubo_cache[(col_info, self.num_true)] = \
                         (soln, na, objs)
-                    print('@@@ CACHE MISS ON', col_info, '@@@')   # Temporary
                     return soln, na, objs
             return None, na, set()  # Control should never reach this point.
