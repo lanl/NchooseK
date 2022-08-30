@@ -21,16 +21,17 @@ class QUBOCache():
             self._qubo_cache = {}  # Map from column info to a QUBO
         else:
             # Create/open an on-disk database.
-            self._sql_con = sqlite3.connect(db_name)
+            self._sql_con = sqlite3.connect(db_name, timeout=60)
             self._sql_cur = self._sql_con.cursor()
             try:
                 self._sql_cur.execute('''\
 CREATE TABLE qubo_cache (
-    col_info text NOT NULL,
-    num_true text NOT NULL,
+    var_coll text NOT NULL,
+    sel_set text NOT NULL,
     qubo text NOT NULL,
     num_ancillae int NOT NULL,
-    obj_vals text NOT NULL
+    obj_vals text NOT NULL,
+    PRIMARY KEY (var_coll, sel_set)
 )
 ''')
                 self._sql_con.commit()
@@ -56,7 +57,7 @@ CREATE TABLE qubo_cache (
             # On-disk database
             query_result = self._sql_cur.execute('''\
 SELECT qubo, num_ancillae, obj_vals FROM qubo_cache
-WHERE col_info = ? AND num_true = ?
+WHERE var_coll = ? AND sel_set = ?
 ''', (key1, key2))
             found = query_result.fetchone()
             if found is None:
@@ -68,7 +69,10 @@ WHERE col_info = ? AND num_true = ?
             # In-memory database
             qubo, na, objs = json.loads(self._qubo_cache[(key1, key2)])
         vs2vars = {'v%d' % i: var[0] for i, var in enumerate(sorted_info)}
-        soln = [(vs2vars[v1], vs2vars[v2], wt) for v1, v2, wt in qubo]
+        soln = [(vs2vars.setdefault(v1, v1),
+                 vs2vars.setdefault(v2, v2),
+                 wt)
+                for v1, v2, wt in qubo]
         return soln, na, objs
 
     def __setitem__(self, key, value):
@@ -79,10 +83,13 @@ WHERE col_info = ? AND num_true = ?
                                   for var, cnt in col_info]))
         key2 = json.dumps(sorted(num_true))
         soln, na, objs = value
-        qubo = [(vars2vs[v1], vars2vs[v2], wt) for v1, v2, wt in soln]
+        qubo = [(vars2vs.setdefault(v1, v1),
+                 vars2vs.setdefault(v2, v2),
+                 wt)
+                for v1, v2, wt in soln]
         try:
             # On-disk database
-            self._sql_cur.execute('INSERT INTO qubo_cache VALUES (?, ?, ?, ?, ?)',
+            self._sql_cur.execute('INSERT OR IGNORE INTO qubo_cache VALUES (?, ?, ?, ?, ?)',
                                   (key1, key2,
                                    json.dumps(qubo), na, json.dumps(objs)))
             self._sql_con.commit()
