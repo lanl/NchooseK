@@ -9,6 +9,7 @@ import sqlite3
 import json
 import itertools
 import os
+import random
 import z3
 
 class QUBOCache():
@@ -140,10 +141,14 @@ class BQMMixin():
 
         # Consider in turn each row of the truth table.
         for row in tt:
+            # As a heuristic, shuffle all possible ancilla columns.
+            shuffled_anc = list(itertools.product(*[[0, 1]]*na))
+            random.shuffle(shuffled_anc)
+
             # Construct a Z3 expression for each combination of ancillae for
             # this row.
             exprs = []
-            for anc in itertools.product(*[[0, 1]]*na):
+            for anc in shuffled_anc:
                 ext_row = list(row) + list(anc)
                 e = 0
                 for i in range(tnc):
