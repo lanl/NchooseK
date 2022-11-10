@@ -28,8 +28,8 @@ As a convenience, the environment's `new_type` method defines a reusable constra
 Installation
 ------------
 
-```Python
-python setup.py install
+```bash
+pip install --use-feature=in-tree-build .
 ```
 
 Legal statement
