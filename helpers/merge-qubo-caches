@@ -1,0 +1,64 @@
+#! /usr/bin/env python
+
+########################################
+# Merge multiple QUBO caches into one. #
+# Author: Scott Pakin <pakin@lanl.gov> #
+########################################
+
+import os
+import sqlite3
+import sys
+
+class TargetDatabase():
+    '''Represent a target database that can have source databases merged
+    into it.'''
+
+    def __init__(self, target):
+        "Create the target database if it doesn't already exist."
+        self.target = target
+        self._target_con = sqlite3.connect(self.target)
+        self._target_cur = self._target_con.cursor()
+        try:
+            self._target_cur.execute('''\
+CREATE TABLE qubo_cache (
+    var_coll text NOT NULL,
+    sel_set text NOT NULL,
+    qubo text NOT NULL,
+    num_ancillae int NOT NULL,
+    obj_vals text NOT NULL,
+    PRIMARY KEY (var_coll, sel_set)
+)
+''')
+            self._target_con.commit()
+        except sqlite3.OperationalError:
+            pass
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self._target_con.close()
+
+    def merge(self, source):
+        'Merge a source database into the target database.'
+        if not os.path.exists(source):
+            raise FileNotFoundError('Source database %s does not exist' % source)
+        self._target_cur.execute('ATTACH ? as source_db', (source,))
+        self._target_cur.execute('''
+INSERT OR IGNORE INTO qubo_cache
+SELECT * FROM source_db.qubo_cache
+''')
+        self._target_con.commit()
+        self._target_cur.execute('DETACH DATABASE source_db')
+
+
+if __name__ == '__main__':
+    if len(sys.argv) < 3:
+        sys.stderr.write('Usage: %s <target.sqlite3> <source1.sqlite3> <source2.sqlite3>...\n' %
+                         sys.argv[0])
+        sys.exit(1)
+    if sys.argv[1] in sys.argv[2:]:
+        raise RuntimeError('%s is both a source and the target database' % sys.argv[1])
+    with TargetDatabase(sys.argv[1]) as target_db:
+        for src in sys.argv[2:]:
+            target_db.merge(src)

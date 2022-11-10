@@ -38,4 +38,4 @@ setuptools.setup(
         'z3-solver >= 4.8',
     ],
     packages=setuptools.find_packages(),
-    scripts=['bin/tt2nck'])
+    scripts=['helpers/populate-qubo-cache', 'helpers/merge-qubo-caches'])

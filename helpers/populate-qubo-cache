@@ -1,0 +1,135 @@
+#! /usr/bin/env python
+
+########################################
+# Precompute NchooseK constraints      #
+# to populate the QUBO cache.          #
+#                                      #
+# Author: Scott Pakin <pakin@lanl.gov> #
+########################################
+
+import argparse
+import multiprocessing as mproc
+import os
+import time
+import warnings
+import nchoosek
+
+class ConstraintGenerator():
+    'Generate a sequence of constraints.'
+
+    def __init__(self, min_vars, max_vars, initial_skip, step):
+        self._min_vars = min_vars
+        self._max_vars = max_vars
+        self._initial_skip = initial_skip
+        self._step = step
+        self._generator = None
+
+    def __iter__(self):
+        self._generator = \
+            iter(self._yield_all_vars_all_sets(self._min_vars,
+                                               self._max_vars,
+                                               self._initial_skip,
+                                               self._step))
+        return self
+
+    def __next__(self):
+        return next(self._generator)
+
+    def _all_sums_to_n(self, n_elts, total):
+        '''Generate all non-decreasing lists of numbers in [0, total] that
+        sum to total.'''
+        if n_elts == 0:
+            yield []
+            return
+        for head in range(total, -1, -1):
+            for tail in self._all_sums_to_n(n_elts - 1, total - head):
+                result = [head] + tail
+                if sum(result) == total and result == sorted(result):
+                    yield result
+
+    def _yield_all_vars_one_set(self, num_vars, sel_set):
+        '''Create and solve all single-constraint NchooseK problems containing
+        a given number of (not necessarily unique) variables and a given
+        selection set.'''
+        for var_tally in self._all_sums_to_n(num_vars, num_vars):
+            var_names = []
+            for i, t in enumerate(var_tally):
+                var_names.extend(['X%d' % i]*t)
+            yield (var_names, sel_set)
+
+    def _yield_n_vars_all_sets(self, num_vars):
+        '''Create and solve a single-constraint NchooseK problem for all
+        possible selection sets on all possible combinations of n (not
+        necessarily unique) variables.'''
+        for bits in range(1, 2**(num_vars + 1)):
+            sel_set = set()
+            for i in range(num_vars + 1):
+                if (bits>>i)&1 == 1:
+                    sel_set.add(i)
+            for cons in self._yield_all_vars_one_set(num_vars, sel_set):
+                yield cons
+
+    def _yield_all_vars_all_sets(self, min_vars, max_vars, initial_skip, step):
+        '''Create and solve a single-constraint NchooseK problem for all
+        possible selection sets over a range of (not necessarily unique)
+        variables.'''
+        idx = -1
+        for num_vars in range(min_vars, max_vars + 1):
+            for cons in self._yield_n_vars_all_sets(num_vars):
+                idx += 1
+                if idx < initial_skip:
+                    continue
+                if (idx - initial_skip)%step != 0:
+                    continue
+                yield cons
+
+
+def convert_constraint(cons):
+    'Create a single-constraint NchooseK problem and convert it to a QUBO.'
+    var_names, sel_set = cons
+    env = nchoosek.Environment()
+    for v in set(var_names):
+        env.register_port(v)
+    env.nck(var_names, sel_set)
+    print('Beginning work on nck(%s, %s)' %
+          (str(var_names), repr(sel_set)))
+    btime = time.time()
+    nchoosek.solver.construct_qubo(env, hard_scale=None)
+    etime = time.time()
+    print('Constructed a QUBO for nck(%s, %s) in %f seconds' %
+          (str(var_names), repr(sel_set), etime - btime))
+
+def report_error(e):
+    'Report an error.'
+    warnings.warn('map_async observed an error: %s' % str(e), RuntimeWarning)
+
+if __name__ == '__main__':
+    # Parse the command line.
+    parser = argparse.ArgumentParser(description="Populate NchooseK's QUBO cache")
+    parser.add_argument('--min-vars', type=int, default=1,
+                        help='minimum number of variables to consider')
+    parser.add_argument('--max-vars', type=int, default=8,
+                        help='maximum number of variables to consider')
+    parser.add_argument('--initial-skip', type=int, default=0,
+                        help='initial number of constraints to ignore')
+    parser.add_argument('--step', type=int, default=1,
+                        help='increment from one processed constraint to the next')
+    parser.add_argument('-j', '--parallel', type=int,
+                        default=mproc.cpu_count(),
+                        help='maximum concurrency to allow')
+    cl_args = parser.parse_args()
+    if os.getenv('NCHOOSEK_QUBO_CACHE') is None:
+        warnings.warn('NCHOOSEK_QUBO_CACHE is not set; no database will be written',
+                      RuntimeWarning)
+
+    # Solve constraints concurrently.
+    with mproc.Pool(processes=cl_args.parallel) as pool:
+        pool.map_async(convert_constraint,
+                       ConstraintGenerator(cl_args.min_vars,
+                                           cl_args.max_vars,
+                                           cl_args.initial_skip,
+                                           cl_args.step),
+                       chunksize=1,
+                       error_callback=report_error)
+        pool.close()
+        pool.join()
