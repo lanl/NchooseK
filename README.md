@@ -16,6 +16,13 @@ Constraints can be either "hard" (the default) or "soft".  Hard constraints must
 
 That's it!  NchooseK may seem simplistic, but our hypothesis is that it is sufficiently general as to express a wide variety of computational problems yet sufficiently simple as to facilitate implementation across highly disparate computational platforms.
 
+Installation
+------------
+
+```bash
+pip install --use-feature=in-tree-build .
+```
+
 Documentation
 -------------
 
@@ -25,12 +32,14 @@ Different solvers eventually will be supported.  Currently, only three exist: `z
 
 As a convenience, the environment's `new_type` method defines a reusable constraint that can be applied to different sets of inputs.
 
-Installation
-------------
+Peer-reviewed publications
+--------------------------
 
-```bash
-pip install --use-feature=in-tree-build .
-```
+Ellis Wilson, Frank Mueller and Scott Pakin, "Combining Hard and Soft Constraints in Quantum Constraint-Satisfaction Systems," in SC22: International Conference for High Performance Computing, Networking, Storage, and Analysis. Dallas, Texas, USA, Nov. 2022, pp. 161–174. URL: https://www.computer.org/csdl/proceedings-article/sc/2022/544400a161/1I0bSO944Eg.
+
+Ellis Wilson, Frank Mueller and Scott Pakin, "Mapping Constraint Problems onto Quantum Gate and Annealing Devices," 2021 IEEE/ACM Second International Workshop on Quantum Computing Software (QCS), St. Louis, Missouri, USA, Nov. 2021, pp. 110–117, DOI: [10.1109/QCS54837.2021.00016](https://doi.org/10.1109/QCS54837.2021.00016).
+
+Harsh Khetawat, Ashlesha Atrey, George Li, Frank Mueller, and Scott Pakin, "Implementing NChooseK on IBM Q Quantum Computer Systems". In: Michael Kirkedal Thomsen and Mathias Soeken (eds.), Proceedings of the 11th International Conference on Reversible Computation (RC 2019), Lausanne, Switzerland. Lecture Notes in Computer Science, vol. 11497. Springer, Cham.  DOI: [10.1007/978-3-030-21500-2_13](https://doi.org/10.1007/978-3-030-21500-2_13).
 
 Legal statement
 ---------------
