@@ -4,6 +4,10 @@
 #########################################
 
 from collections import defaultdict
+import qiskit
+import numpy as np
+import math
+import cmath
 
 
 class ConstraintConversionError(Exception):
@@ -121,3 +125,55 @@ class Result():
     def __str__(self):
         ret = self._str_dict()
         return str(ret)
+
+def z1(qc, qubit, coef):
+    # i = 0 + 1j
+    # fac = i*math.pi/2
+    qc.rz(-coef, qubit)
+    # qc.unitary([[cmath.exp(coef*fac), 0], [0, cmath.exp(-1*coef*fac)]], qubit)
+
+def z2(qc, qubits, coef):
+    qc.rzz(coef, qubits[0], qubits[1])
+
+def circuit_gen(env, quantum_instance=None):
+    # Cost function and single circuit
+
+    if not quantum_instance:
+        print("QAOA needs a backend for transpilation; please provide a quantum instance")
+        return
+
+    qubo = construct_qubo(env, None)
+    vardict = {}
+    ports = env.ports()
+    mat = np.zeros((len(ports), len(ports)))
+    for idx, port in enumerate(ports):
+        vardict[port] = idx
+    qc = qiskit.QuantumCircuit(len(ports), len(ports))
+    qc.h(range(len(ports)))
+    alpha = qiskit.circuit.Parameter('a')
+    beta = qiskit.circuit.Parameter('b')
+    for con in qubo:
+        a = vardict[con[0]]
+        b = vardict[con[1]]
+        if a == b:
+            z1(qc, a, alpha*qubo[con])
+        else:
+            z2(qc, [a, b], alpha*qubo[con])
+        mat[a][b] = qubo[con]
+    qc.rx(beta, range(len(ports)))
+    for p in range(len(ports)):
+        qc.measure(p, p)
+    
+    # qc = quantum_instance.transpile(qc)
+    qc = qiskit.transpile(qc, backend=quantum_instance.backend, basis_gates=quantum_instance.backend_config["basis_gates"], optimization_level=0)
+    
+    def ret(counts):
+        totval = 0
+        total = 0
+        for count in counts:
+            arr = np.array([int(x) for x in count], dtype=int)
+            totval += counts[count]
+            total += counts[count]*(arr.T @ mat @ arr)
+        return total/totval
+
+    return qc, ret

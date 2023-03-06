@@ -25,8 +25,17 @@ pip install --use-feature=in-tree-build .
 
 Documentation
 -------------
+The result object, which is returned when you solve a problem with NchooseK, contains a large amount of information. If the object is stored in a variable named `results`, the following pieces of information can be obtained:
+```python
+results.variables # a list containing the names of NchooseK variables
+results.solutions # a list containing dictionaries of the solutions from NchooseK; each dictionary has the NchooseK variables as keys and the value (0 or 1) as values.
+results.tallies # a list containing the number of times the solution from results.solutions with a corresponding index occured (currently only for ocean solver)
+results.qubits # number of physical qubits used
+results.times # a tuple of datetimes; the time the problem was started and the time it completed.
+```
 
-Documentation is forthcoming.  For the time being, please refer to the examples in the [examples](examples) subdirectory.  The main idea is to instantiate an `nchoosek.Environment`, which is basically a name space.  The environment's `register_port` method defines a variable, and the environment's `nck` method establishes a constraint given a list of ports and a set of allowable numbers of True ports.
+
+More Documentation is forthcoming.  For the time being, please refer to the examples in the [examples](examples) subdirectory.  The main idea is to instantiate an `nchoosek.Environment`, which is basically a name space.  The environment's `register_port` method defines a variable, and the environment's `nck` method establishes a constraint given a list of ports and a set of allowable numbers of True ports.
 
 Different solvers eventually will be supported.  Currently, only three exist: `z3`, which uses Microsoft Research's classical [Z3 Theorem Prover](https://github.com/Z3Prover/z3), `ocean`, which uses D-Wave's [Ocean](https://ocean.dwavesys.com/) to run either classically or on a quantum computer, and `qiskit`, which uses IBM's [Qiskit](https://www.qiskit.org/) to run either classically or on a quantum computer.  Specify one of those in your `NCHOOSEK_SOLVER` environment variable or as the optional `solver` argument to the environment's `solve` method (default: `z3`).  Invoke the `solve` method on the environment to solve for the value of every variable in the environment.  `solve` accepts solver-specific parameters, which also can be provided via the `NCHOOSEK_PARAMS` environment variable.
 
