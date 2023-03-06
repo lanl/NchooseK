@@ -138,10 +138,6 @@ def z2(qc, qubits, coef):
 def circuit_gen(env, quantum_instance=None):
     # Cost function and single circuit
 
-    if not quantum_instance:
-        print("QAOA needs a backend for transpilation; please provide a quantum instance")
-        return
-
     qubo = construct_qubo(env, None)
     vardict = {}
     ports = env.ports()
@@ -164,8 +160,8 @@ def circuit_gen(env, quantum_instance=None):
     for p in range(len(ports)):
         qc.measure(p, p)
     
-    # qc = quantum_instance.transpile(qc)
-    qc = qiskit.transpile(qc, backend=quantum_instance.backend, basis_gates=quantum_instance.backend_config["basis_gates"], optimization_level=0)
+    if quantum_instance:
+        qc = qiskit.transpile(qc, backend=quantum_instance.backend, basis_gates=quantum_instance.backend_config["basis_gates"], optimization_level=0)
     
     def ret(counts):
         totval = 0
