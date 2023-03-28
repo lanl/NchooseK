@@ -165,7 +165,6 @@ def circuit_gen(env, quantum_instance=None):
                     isin[c] += qubo[con]/4
                 else:
                     isin[c] = qubo[con]/4
-    print(isin)
     siz = idx + 1
     mat = np.zeros((siz, siz))
     qc = qiskit.QuantumCircuit(siz, siz)
@@ -181,7 +180,7 @@ def circuit_gen(env, quantum_instance=None):
             z1(qc, a, alpha*isin[con])
         else:
             z2(qc, [a, b], alpha*isin[con])
-        mat[a][b] = isin[con]
+        mat[a][b] = qubo[con]
     qc.rx(beta, range(siz))
     for p in range(siz):
         qc.measure(p, p)
