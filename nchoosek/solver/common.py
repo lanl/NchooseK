@@ -4,10 +4,10 @@
 #########################################
 
 from collections import defaultdict
-import qiskit
 import numpy as np
 import math
 import cmath
+
 
 
 class ConstraintConversionError(Exception):
@@ -131,75 +131,3 @@ class Result():
         ret = self._str_dict()
         return str(ret)
 
-def z1(qc, qubit, coef):
-    # i = 0 + 1j
-    # fac = i*math.pi/2
-    qc.rz(-coef, qubit)
-    # qc.unitary([[cmath.exp(coef*fac), 0], [0, cmath.exp(-1*coef*fac)]], qubit)
-
-def z2(qc, qubits, coef):
-    qc.rzz(coef, qubits[0], qubits[1])
-
-def circuit_gen(env, quantum_instance=None):
-    # Cost function and single circuit
-
-    vardict = {}
-    ports = env.ports()
-    qubo = construct_qubo(env, None)
-    isin = {}
-    for idx, port in enumerate(ports):
-        vardict[port] = idx
-    # print(idx)
-    # print(len(ports))
-    for con in qubo:
-        if '_anc' in con[0] or '_anc' in con[1]:
-            for c in con:
-                if c not in vardict:
-                    idx += 1
-                    vardict[c] = idx
-        if con[0] == con[1]:
-            if con in isin:
-                isin[con] += qubo[con]/2
-            else:
-                isin[con] = qubo[con]/2
-        else:
-            three = [con, (con[0], con[0]), (con[1], con[1])]
-            for c in three:
-                if c in isin:
-                    isin[c] += qubo[con]/4
-                else:
-                    isin[c] = qubo[con]/4
-    siz = idx + 1
-    mat = np.zeros((siz, siz))
-    for con in qubo:
-        mat[vardict[con[0]]][vardict[con[1]]] = qubo[con]
-    qc = qiskit.QuantumCircuit(siz, siz)
-    qc.h(range(siz))
-    alpha = qiskit.circuit.Parameter('a')
-    beta = qiskit.circuit.Parameter('b')
-    for con in isin:
-        if isin[con] == 0.0:
-            continue
-        a = vardict[con[0]]
-        b = vardict[con[1]]
-        if a == b:
-            z1(qc, a, alpha*isin[con])
-        else:
-            z2(qc, [a, b], alpha*isin[con])
-    qc.rx(beta, range(siz))
-    for p in range(siz):
-        qc.measure(p, p)
-    
-    if quantum_instance:
-        qc = qiskit.transpile(qc, backend=quantum_instance.backend, basis_gates=quantum_instance.backend_config["basis_gates"], optimization_level=0)
-    
-    def ret(counts):
-        totval = 0
-        total = 0
-        for count in counts:
-            arr = np.array([int(x) for x in count], dtype=int)
-            totval += counts[count]
-            total += counts[count]*(arr.T @ mat @ arr)
-        return total/totval
-
-    return qc, ret
