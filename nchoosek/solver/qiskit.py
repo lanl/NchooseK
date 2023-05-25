@@ -5,11 +5,14 @@
 
 import datetime
 import qiskit
+from qiskit import Aer
+from qiskit.algorithms.minimum_eigensolvers import QAOA
+from qiskit.algorithms.optimizers import COBYLA
+from qiskit.primitives import BaseSampler, Sampler, BackendSampler
+from qiskit.providers import Backend
+from qiskit_ibm_provider import IBMProvider
 from qiskit_optimization import QuadraticProgram
 from qiskit_optimization.algorithms import MinimumEigenOptimizer
-from qiskit.algorithms import QAOA
-from qiskit.algorithms.optimizers import COBYLA
-from qiskit.utils import QuantumInstance
 from nchoosek import solver
 from nchoosek.solver import construct_qubo
 
@@ -19,7 +22,6 @@ class QiskitResult(solver.Result):
 
     def __init__(self):
         super().__init__()
-        self.quantum_instance = None
         self._jobIDs = None
         self._qubits = None
         self._depth = None
@@ -28,14 +30,16 @@ class QiskitResult(solver.Result):
     def _compute_expensive_values(self):
         'Provide various values that require nontrivial time to compute.'
         try:
-            device = self.quantum_instance.backend
+            device = self.sampler.backend
             jobs = device.jobs(limit=50,
                                start_datetime=self.solver_times[0],
                                end_datetime=self.solver_times[1])
-            # Qiskit jobs don't tell you how many physical qubits get used;
-            # we need to tally these ourself.
-            jnum = len(jobs)//2   # Representative job (last should be avoided)
-            circ = jobs[jnum].circuits()[0]  # 1st circuit of a representative job
+            # Qiskit jobs don't tell you how many physical qubits were
+            # used; we need to tally these ourselves.  jnum is a
+            # representative job.  (The last job should be avoided.)  circ
+            # is the first circuit of that representative job.
+            jnum = len(jobs)//2   #
+            circ = jobs[jnum].circuits()[0]
             self._qubits = len({q
                                 for d in circ.data
                                 if d[0].name != 'barrier'
@@ -77,7 +81,10 @@ class QiskitResult(solver.Result):
 
     def __repr__(self):
         ret = self._repr_dict()
-        ret["Qiskit backend"] = self.quantum_instance.backend
+        try:
+            ret["Qiskit backend"] = self.sampler.backend
+        except AttributeError:
+            ret["Qiskit backend"] = 'unknown %s backend' % repr(self.sampler)
         if self.jobIDs:
             ret["number of jobs"] = len(self.jobIDs)
         if self.depth:
@@ -86,55 +93,53 @@ class QiskitResult(solver.Result):
 
     def __str__(self):
         ret = self._str_dict()
-        ret["Qiskit backend"] = self.quantum_instance.backend.name()
+        ret["Qiskit backend"] = self._get_backend_name() or "[unknown]"
         if self.jobIDs:
             ret["number of jobs"] = len(self.jobIDs)
         if self.depth:
             ret["circuit depth"] = self.depth
         return str(ret)
 
-def _construct_quantum_instance(desc):
-    'Construct a QuantumInstance from a a string description.'
-    if qiskit.IBMQ.active_account() is None:
-        qiskit.IBMQ.load_account()
-    fields = desc.split('/')
-    hub, group, project, system = None, None, None, None
-    nf = len(fields)
-    if nf >= 1 and fields[-1] != '*':
-        system = fields[-1]
-    if nf >= 2 and fields[-2] != '*':
-        project = fields[-2]
-    if nf >= 3 and fields[-3] != '*':
-        group = fields[-3]
-    if nf >= 4 and fields[-4] != '*':
-        hub = fields[-4]
-    if nf >= 5:
-        raise ValueError('QuantumInstance must be of the form hub/group/project/system')
-    providers = qiskit.IBMQ.providers(hub=hub, group=group, project=project)
-    backend = None
-    for provider in providers:
-        if system is None:
-            backend = qiskit.providers.ibmq.least_busy(provider.backends())
-            break
-        backends = provider.backends(name=system)
-        if len(backends) > 0:
-            backend = backends[0]
-            break
-    if backend is None:
-        raise RuntimeError('Failed to find a quantum backend described by "%s"' % desc)
-    return QuantumInstance(backend)
+    def _get_backend_name(self):
+        'Return the name of the backend or None if not available.'
+        try:
+            backend = self.sampler.backend
+        except AttributeError:
+            # No backend
+            return None
+        if isinstance(backend.name, str):
+            # BackendV2
+            return backend.name
+        else:
+            # BackendV1
+            return backend.configuration().backend_name
 
-def solve(env, quantum_instance=None, hard_scale=None, optimizer=COBYLA(),
+
+def solve(env, backend=None, hard_scale=None, optimizer=COBYLA(),
           reps=1, initial_point=None, callback=None):
     'Solve an NchooseK problem, returning a QiskitResult.'
-    # If no quantum_instance was given, run the circuit on a local
-    # simulator.  If a quantum_instances was provided as a string,
-    # construct a QuantumInstance based on that string's specification.
-    if not quantum_instance:
-        backend = qiskit.Aer.get_backend('qasm_simulator')
-        quantum_instance = QuantumInstance(backend)
-    elif isinstance(quantum_instance, str):
-        quantum_instance = _construct_quantum_instance(quantum_instance)
+    # Construct a BackendSampler called sampler from the given backend
+    # parameter, which can be a Sampler, a Backend, a string, or None.
+    if isinstance(backend, BaseSampler):
+        # If a Sampler was provided, use it.
+        sampler = backend
+    elif isinstance(backend, Backend):
+        # If a Backend was provided, wrap it in a Sampler.
+        sampler = BackendSampler(backend)
+    elif isinstance(backend, str):
+        # If a string was provided, use it as a backend name for the
+        # default IBM provider.
+        ibm_provider = IBMProvider()
+        ibm_backend = ibm_provider.get_backend(name=backend)
+        sampler = BackendSampler(ibm_backend)
+    elif backend is None:
+        # If nothing was provided, sample from a local simulator.
+        sampler = BackendSampler(Aer.get_backend('aer_simulator'))
+    else:
+        # If none of the above were provided, abort.
+        raise ValueError('failed to recognize %s'
+                         ' as a Qiskit Backend or Sampler' %
+                         repr(backend))
 
     # Convert the environment to a QUBO.
     qtime1 = datetime.datetime.now()
@@ -149,11 +154,10 @@ def solve(env, quantum_instance=None, hard_scale=None, optimizer=COBYLA(),
 
     # Run the problem with QAOA.
     stime1 = datetime.datetime.now()
-    qaoa = MinimumEigenOptimizer(QAOA(optimizer=optimizer, reps=reps,
-                                 initial_point=initial_point,
-                                 callback=callback,
-                                 quantum_instance=quantum_instance))
-    result = qaoa.solve(prog)
+    qaoa = QAOA(sampler=sampler, optimizer=optimizer, reps=reps,
+                initial_point=initial_point, callback=callback)
+    alg = MinimumEigenOptimizer(qaoa)
+    result = alg.solve(prog)
     stime2 = datetime.datetime.now()
     ret = QiskitResult()
     ret.variables = env.ports()
@@ -165,5 +169,5 @@ def solve(env, quantum_instance=None, hard_scale=None, optimizer=COBYLA(),
     ret.qubo_times = (qtime1, qtime2)
     ret.solver_times = (stime1, stime2)
     ret.tallies = [1]
-    ret.quantum_instance = quantum_instance
+    ret.sampler = sampler
     return ret
