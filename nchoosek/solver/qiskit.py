@@ -85,10 +85,12 @@ class QiskitResult(solver.Result):
             ret["Qiskit backend"] = self.sampler.backend
         except AttributeError:
             ret["Qiskit backend"] = 'unknown %s backend' % repr(self.sampler)
-        if self.jobIDs:
+        if self.jobIDs is not None:
             ret["number of jobs"] = len(self.jobIDs)
-        if self.depth:
+        if self.depth is not None:
             ret["circuit depth"] = self.depth
+        if self.samples is not None:
+            ret["samples"] = self.samples
         return 'nchoosek.solver.Result(%s)' % str(ret)
 
     def __str__(self):
@@ -98,6 +100,8 @@ class QiskitResult(solver.Result):
             ret["number of jobs"] = len(self.jobIDs)
         if self.depth:
             ret["circuit depth"] = self.depth
+        if self.samples is not None:
+            ret["number of samples"] = len(self.samples)
         return str(ret)
 
     def _get_backend_name(self):
@@ -162,12 +166,16 @@ def solve(env, backend=None, hard_scale=None, optimizer=COBYLA(),
     ret = QiskitResult()
     ret.variables = env.ports()
     ret.solutions = []
-    ret.solutions.append({k: v != 0
-                          for k, v in result.variables_dict.items()
-                          if k in env.ports()})
+    vars = result.variables
+    for samp in result.samples:
+        ret.solutions.append({vars[i].name: x != 0
+                              for i, x in enumerate(samp.x)
+                              if vars[i].name in env.ports()})
+
     # Record this time now to ensure that the QAOA is done running first.
     ret.qubo_times = (qtime1, qtime2)
     ret.solver_times = (stime1, stime2)
     ret.tallies = [1]
     ret.sampler = sampler
+    ret.samples = result.samples
     return ret
