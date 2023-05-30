@@ -91,6 +91,9 @@ class QiskitResult(solver.Result):
             ret["circuit depth"] = self.depth
         if self.samples is not None:
             ret["samples"] = self.samples
+        ret["total number of shots"] = self.total_shots
+        ret["final number of shots"] = self.final_shots
+        ret["number of jobs"] = self.num_jobs
         return 'nchoosek.solver.Result(%s)' % str(ret)
 
     def __str__(self):
@@ -100,8 +103,11 @@ class QiskitResult(solver.Result):
             ret["number of jobs"] = len(self.jobIDs)
         if self.depth:
             ret["circuit depth"] = self.depth
+        ret["total number of shots"] = self.total_shots
+        ret["final number of shots"] = self.final_shots
+        ret["number of jobs"] = self.num_jobs
         if self.samples is not None:
-            ret["number of samples"] = len(self.samples)
+            ret["number of unique samples"] = len(self.samples)
         return str(ret)
 
     def _get_backend_name(self):
@@ -156,12 +162,29 @@ def solve(env, backend=None, hard_scale=None, optimizer=COBYLA(),
         prog.binary_var(var)
     prog.minimize(quadratic=qubo)
 
+    # Keep track of the number of shots and jobs.
+    final_shots = 0   # Shots in final job; used for computing tallies
+    total_shots = 0   # Total shots across all jobs
+    num_jobs = 0      # Number of jobs submitted
+
+    # Wrap the user's callback with one that records the final number
+    # of shots.
+    def callback_wrapper(n_evals, beta_gamma, energy, metadata):
+        nonlocal final_shots, total_shots, num_jobs
+        shots = metadata['shots']
+        final_shots = shots
+        total_shots += shots
+        num_jobs += 1
+        if callback is not None:
+            callback(n_evals, beta_gamma, energy, metadata)
+
     # Run the problem with QAOA.
     stime1 = datetime.datetime.now()
     qaoa = QAOA(sampler=sampler, optimizer=optimizer, reps=reps,
-                initial_point=initial_point, callback=callback)
+                initial_point=initial_point, callback=callback_wrapper)
     alg = MinimumEigenOptimizer(qaoa)
     result = alg.solve(prog)
+
     stime2 = datetime.datetime.now()
     ret = QiskitResult()
     ret.variables = env.ports()
@@ -175,7 +198,10 @@ def solve(env, backend=None, hard_scale=None, optimizer=COBYLA(),
     # Record this time now to ensure that the QAOA is done running first.
     ret.qubo_times = (qtime1, qtime2)
     ret.solver_times = (stime1, stime2)
-    ret.tallies = [1]
     ret.sampler = sampler
     ret.samples = result.samples
+    ret.final_shots = final_shots
+    ret.total_shots = total_shots
+    ret.num_jobs = num_jobs
+    ret.tallies = [round(s.probability*ret.final_shots) for s in ret.samples]
     return ret
