@@ -150,7 +150,11 @@ def solve(env, backend=None, hard_scale=None, optimizer=COBYLA(),
     ret.total_shots = total_shots
     ret.num_jobs = num_jobs
     ret.tallies = [round(s.probability*ret.final_shots) for s in ret.samples]
-    ret.qubits = max([c.num_qubits for c in sampler.transpiled_circuits])
-    ret.depth = max([c.depth() for c in sampler.transpiled_circuits])
+    try:
+        ret.qubits = max([c.num_qubits for c in sampler.transpiled_circuits])
+        ret.depth = max([c.depth() for c in sampler.transpiled_circuits])
+    except AttributeError:
+        ret.qubits = max([c.num_qubits for c in sampler.circuits])
+        ret.depth = max([c.depth() for c in sampler.circuits])
     ret.job_tags = job_tags
     return ret
