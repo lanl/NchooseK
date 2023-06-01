@@ -64,28 +64,32 @@ class QiskitResult(solver.Result):
 def _construct_backendsampler(backend, tags):
     '''Construct a BackendSampler called sampler from the given backend
      parameter, which can be a Sampler, a Backend, a string, or None.'''
-    opts = {'job_tags': tags}
+    # Create a sampler from the backend (which actually is allowed to
+    # be a sampler).
     if isinstance(backend, BaseSampler):
         # If a Sampler was provided, use it.
         sampler = backend
     elif isinstance(backend, Backend):
         # If a Backend was provided, wrap it in a Sampler.
-        sampler = BackendSampler(backend, options=opts)
+        sampler = BackendSampler(backend)
     elif isinstance(backend, str):
         # If a string was provided, use it as a backend name for the
         # default IBM provider.
         ibm_provider = IBMProvider()
         ibm_backend = ibm_provider.get_backend(name=backend)
-        sampler = BackendSampler(ibm_backend, options=opts)
+        sampler = BackendSampler(ibm_backend)
     elif backend is None:
         # If nothing was provided, sample from a local simulator.
-        sampler = BackendSampler(Aer.get_backend('aer_simulator'),
-                                 options=opts)
+        sampler = BackendSampler(Aer.get_backend('aer_simulator'))
     else:
         # If none of the above were provided, abort.
         raise ValueError('failed to recognize %s'
                          ' as a Qiskit Backend or Sampler' %
                          repr(backend))
+
+    # Specify job tags unless the caller already specified them.
+    if 'job_tags' not in sampler.options:
+        sampler.set_options(job_tags=tags)
     return sampler
 
 
