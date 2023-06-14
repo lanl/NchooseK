@@ -1,10 +1,12 @@
 import qiskit
+from nchoosek import solver
+import numpy as np
 
 def circuit_gen(env, quantum_instance=None):
     # Cost function and single circuit
 
     ports = env.ports()
-    qubo = construct_qubo(env, None)
+    qubo = solver.construct_qubo(env, None)
     # dictionary to hold the ising conversion of the qubo
     isin = {}
     # dictionary to be able to retrieve port numbers
