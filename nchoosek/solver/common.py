@@ -76,6 +76,7 @@ class Result():
         self.qubits = None
         self.qubo_times = None
         self.solver_times = None
+        self.num_samples = 1
 
     def _repr_dict(self):
         'Return a dictionary for use internally by __repr__.'
@@ -92,6 +93,7 @@ class Result():
             ret["qubo times"] = self.solver_times
         if self.solver_times:
             ret["solver times"] = self.solver_times
+        ret["number of samples"] = self.num_samples
         return ret
 
     def __repr__(self):
@@ -116,6 +118,7 @@ class Result():
         if self.solver_times:
             ret["solver times"] = (self.solver_times[0].strftime("%Y-%m-%d %H:%M:%S.%f"),
                                    self.solver_times[1].strftime("%Y-%m-%d %H:%M:%S.%f"))
+        ret["number of samples"] = self.num_samples
         return ret
 
     def __str__(self):
