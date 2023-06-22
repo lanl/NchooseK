@@ -224,6 +224,7 @@ def solve(env, backend=None, hard_scale=None, runtime_service=None,
     ret.samples = result.samples
     ret.final_shots = final_shots
     ret.total_shots = total_shots
+    ret.num_samples = final_shots   # Number actually returned to the caller
     ret.num_jobs = num_jobs
     ret.tallies = [round(s.probability*ret.final_shots) for s in ret.samples]
     try:
