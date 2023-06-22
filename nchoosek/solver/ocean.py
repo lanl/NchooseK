@@ -127,6 +127,7 @@ def solve(env, sampler=None, hard_scale=None, **sampler_args):
     ret.energies = en
     ret.sampler = sampler
     ret.exec_info = result.info
+    ret.num_samples = sum(num)
 
     # Inspect the embedding to find out how many qubits were used.
     # Simulators will not have embedding_context so we assume no
