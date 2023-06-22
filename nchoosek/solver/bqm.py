@@ -12,6 +12,7 @@ import os
 import random
 import z3
 
+
 class QUBOCache():
     'Keep track of previously computed QUBOs.'
 
@@ -90,7 +91,8 @@ WHERE var_coll = ? AND sel_set = ?
                 for v1, v2, wt in soln]
         try:
             # On-disk database
-            self._sql_cur.execute('INSERT OR IGNORE INTO qubo_cache VALUES (?, ?, ?, ?, ?)',
+            self._sql_cur.execute('INSERT OR IGNORE INTO qubo_cache'
+                                  ' VALUES (?, ?, ?, ?, ?)',
                                   (key1, key2,
                                    json.dumps(qubo), na, json.dumps(objs)))
             self._sql_con.commit()
@@ -207,7 +209,7 @@ class BQMMixin():
         nbits = len(all_ports)
         for bits in range(2**nbits):
             # Compute the objective value of the current variable assignment.
-            vals = {all_ports[i]: (bits>>i)&1 for i in range(nbits)}
+            vals = {all_ports[i]: (bits >> i) & 1 for i in range(nbits)}
             o = 0
             for v0, v1, wt in soln:
                 o += vals[v0]*vals[v1]*wt
