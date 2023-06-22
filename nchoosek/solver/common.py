@@ -117,11 +117,13 @@ class Result():
         if self.qubits:
             ret["number of qubits"] = self.qubits
         if self.qubo_times:
-            ret["qubo times"] = (self.qubo_times[0].strftime("%Y-%m-%d %H:%M:%S.%f"),
-                                 self.qubo_times[1].strftime("%Y-%m-%d %H:%M:%S.%f"))
+            ret["qubo times"] = \
+                (self.qubo_times[0].strftime("%Y-%m-%d %H:%M:%S.%f"),
+                 self.qubo_times[1].strftime("%Y-%m-%d %H:%M:%S.%f"))
         if self.solver_times:
-            ret["solver times"] = (self.solver_times[0].strftime("%Y-%m-%d %H:%M:%S.%f"),
-                                   self.solver_times[1].strftime("%Y-%m-%d %H:%M:%S.%f"))
+            ret["solver times"] = \
+                (self.solver_times[0].strftime("%Y-%m-%d %H:%M:%S.%f"),
+                 self.solver_times[1].strftime("%Y-%m-%d %H:%M:%S.%f"))
         ret["number of samples"] = self.num_samples
         return ret
 
