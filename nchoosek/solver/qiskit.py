@@ -88,7 +88,7 @@ def _establish_runtime_backend(backend, service):
         # within the session.
         return service.backend(backend.session.backend()), backend.options
 
-    if isinstance(backend, qiskit_bim_runtime.ibm_backend.IBMBackend):
+    if isinstance(backend, qiskit_ibm_runtime.ibm_backend.IBMBackend):
         return backend, None
 
     if isinstance(backend, Backend):
@@ -127,14 +127,14 @@ def _construct_backendsampler(backend, tags):
     else:
         try:
             if isinstance(backend, qiskit_ibm_runtime.ibm_backend.IBMBackend):
-                # If a runtime Sampler is desired without generating a new session,
-                # the Sampler itself must be passed in as backend. We can't
-                # instantiate a runtime Sampler without a service object.
+                # If a runtime Sampler is desired without generating a new
+                # session, the Sampler itself must be passed in as backend. We
+                # can't instantiate a runtime Sampler without a service object.
                 ibm_provider = IBMProvider()
                 ibm_backend = ibm_provider.get_backend(name=backend.name)
                 sampler = BackendSampler(ibm_backend)
         except NameError:
-            # qiskit_ibm_runtime isn't installed; continue on to the normal abort
+            # qiskit_ibm_runtime isn't installed; continue on to abort
             pass
         # If none of the above were provided, abort.
         raise ValueError('failed to recognize %s'
@@ -187,7 +187,8 @@ def solve(env, backend=None, hard_scale=None, runtime_service=None,
 
     if runtime_service != None:
         # Run the problem with QAOA on IBM Runtime
-        with qiskit_ibm_runtime.Session(service=runtime_service, backend=backend) as session:
+        with qiskit_ibm_runtime.Session(service=runtime_service,
+                                        backend=backend) as session:
             sampler = qiskit_ibm_runtime.Sampler(options=options)
             if 'job_tags' not in sampler.options:
                 sampler.set_options(job_tags=job_tags)
