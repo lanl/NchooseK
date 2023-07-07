@@ -17,6 +17,11 @@ from qiskit_optimization.algorithms import MinimumEigenOptimizer
 from nchoosek import solver
 from nchoosek.solver import construct_qubo
 
+try:
+    import qiskit_ibm_runtime
+except ModuleNotFoundError:
+    pass
+
 
 class QiskitResult(solver.Result):
     'Add Qiskit-specific fields to a Result.'
@@ -24,7 +29,13 @@ class QiskitResult(solver.Result):
     def __repr__(self):
         ret = self._repr_dict()
         try:
-            ret["Qiskit backend"] = self.sampler.backend
+            # BackendSampler has a backend attribute, but the other samplers
+            # don't. Runtime Sampler has a session attribute which in turn has a
+            # backend method, but it only gives a string.
+            if isinstance(self.sampler, qiskit.primitives.BackendSampler):
+                ret["Qiskit backend"] = self.sampler.backend.name
+            else:
+                ret["Qiskit backend"] = self.sampler.session.backend()
         except AttributeError:
             ret["Qiskit backend"] = 'unknown %s backend' % repr(self.sampler)
         ret["circuit depth"] = self.depth
@@ -49,7 +60,11 @@ class QiskitResult(solver.Result):
     def _get_backend_name(self):
         'Return the name of the backend or None if not available.'
         try:
-            backend = self.sampler.backend
+            if type(self.sampler) == qiskit.primitives.BackendSampler:
+                backend = self.sampler.backend
+            else:
+                # This doesn't give us the backend itself, just the string.
+                return self.sampler.session.backend()
         except AttributeError:
             # No backend
             return None
@@ -60,6 +75,34 @@ class QiskitResult(solver.Result):
             # BackendV1
             return backend.configuration().backend_name
 
+def _establish_runtime_backend(backend, service):
+    '''For the sampler to be connected to the session, it needs to be
+    created during the session. This returns a backend object and any
+    included options.'''
+    if isinstance(backend, BackendSampler):
+        return service.backend(backend.backend.name), backend.options
+
+    if isinstance(backend, qiskit_ibm_runtime.sampler.Sampler):
+        # backend() returns the string name rather than the object itself
+        # Cannot just return the sampler, as the sampler must be created
+        # within the session.
+        return service.backend(backend.session.backend()), backend.options
+
+    if isinstance(backend, qiskit_bim_runtime.ibm_backend.IBMBackend):
+        return backend, None
+
+    if isinstance(backend, Backend):
+        # If it got this far, this is the wrong kind of backend.
+        return service.backend(backend.name), None
+
+    if isinstance(backend, str):
+        return service.backend(backend), None
+
+    else:
+        # If none of the above were provided, abort.
+        raise ValueError('failed to recognize %s'
+                         ' as a Qiskit Backend or Sampler' %
+                         repr(backend))
 
 def _construct_backendsampler(backend, tags):
     '''Construct a BackendSampler called sampler from the given backend
@@ -82,6 +125,17 @@ def _construct_backendsampler(backend, tags):
         # If nothing was provided, sample from a local simulator.
         sampler = BackendSampler(Aer.get_backend('aer_simulator'))
     else:
+        try:
+            if isinstance(backend, qiskit_ibm_runtime.ibm_backend.IBMBackend):
+                # If a runtime Sampler is desired without generating a new session,
+                # the Sampler itself must be passed in as backend. We can't
+                # instantiate a runtime Sampler without a service object.
+                ibm_provider = IBMProvider()
+                ibm_backend = ibm_provider.get_backend(name=backend.name)
+                sampler = BackendSampler(ibm_backend)
+        except NameError:
+            # qiskit_ibm_runtime isn't installed; continue on to the normal abort
+            pass
         # If none of the above were provided, abort.
         raise ValueError('failed to recognize %s'
                          ' as a Qiskit Backend or Sampler' %
@@ -93,14 +147,17 @@ def _construct_backendsampler(backend, tags):
     return sampler
 
 
-def solve(env, backend=None, hard_scale=None, optimizer=COBYLA(),
-          reps=1, initial_point=None, callback=None):
+def solve(env, backend=None, hard_scale=None, runtime_service=None,
+          optimizer=COBYLA(), reps=1, initial_point=None, callback=None):
     'Solve an NchooseK problem, returning a QiskitResult.'
-    # Acquire a BackendSampler from the backend parameter and a list
-    # of job tags.
-    job_tags = ['NchooseK', 'nchoosek-%010x' % random.randrange(16**10)]
-    sampler = _construct_backendsampler(backend, job_tags)
+    # Acquire a Backend or BackendSampler from the backend parameter and a
+    # list of job tags.
+    if runtime_service:
+        backend, options = _establish_runtime_backend(backend, runtime_service)
+    else:
+        sampler = _construct_backendsampler(backend, job_tags)
 
+    job_tags = ['NchooseK', 'nchoosek-%010x' % random.randrange(16**10)]
     # Convert the environment to a QUBO.
     qtime1 = datetime.datetime.now()
     qubo = construct_qubo(env, hard_scale)
@@ -128,14 +185,29 @@ def solve(env, backend=None, hard_scale=None, optimizer=COBYLA(),
         if callback is not None:
             callback(n_evals, beta_gamma, energy, metadata)
 
-    # Run the problem with QAOA.
-    stime1 = datetime.datetime.now()
-    qaoa = QAOA(sampler=sampler, optimizer=optimizer, reps=reps,
-                initial_point=initial_point, callback=callback_wrapper)
-    alg = MinimumEigenOptimizer(qaoa)
-    result = alg.solve(prog)
+    if runtime_service != None:
+        # Run the problem with QAOA on IBM Runtime
+        with qiskit_ibm_runtime.Session(service=runtime_service, backend=backend) as session:
+            sampler = qiskit_ibm_runtime.Sampler(options=options)
+            if 'job_tags' not in sampler.options:
+                sampler.set_options(job_tags=job_tags)
+            stime1 = datetime.datetime.now()
+            qaoa = QAOA(sampler=sampler, optimizer=optimizer, reps=reps,
+                        initial_point=initial_point, callback=callback_wrapper)
+            alg = MinimumEigenOptimizer(qaoa)
+            result = alg.solve(prog)
+            stime2 = datetime.datetime.now()
+            session.close()
 
-    stime2 = datetime.datetime.now()
+    else:
+        # Run the problem with QAOA on a BackendSampler
+        stime1 = datetime.datetime.now()
+        qaoa = QAOA(sampler=sampler, optimizer=optimizer, reps=reps,
+                    initial_point=initial_point, callback=callback_wrapper)
+        alg = MinimumEigenOptimizer(qaoa)
+        result = alg.solve(prog)
+        stime2 = datetime.datetime.now()
+
     ret = QiskitResult()
     ret.variables = env.ports()
     ret.solutions = []
@@ -158,7 +230,12 @@ def solve(env, backend=None, hard_scale=None, optimizer=COBYLA(),
         ret.qubits = max([c.num_qubits for c in sampler.transpiled_circuits])
         ret.depth = max([c.depth() for c in sampler.transpiled_circuits])
     except AttributeError:
-        ret.qubits = max([c.num_qubits for c in sampler.circuits])
-        ret.depth = max([c.depth() for c in sampler.circuits])
+        # Runtime sampler doesn't store circuits for some reason
+        if len(sampler.circuits) > 0:
+            ret.qubits = max([c.num_qubits for c in sampler.circuits])
+            ret.depth = max([c.depth() for c in sampler.circuits])
+        else:
+            ret.qubits = 0
+            ret.depth = 0
     ret.job_tags = job_tags
     return ret
