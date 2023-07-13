@@ -130,9 +130,10 @@ def _construct_backendsampler(backend, tags):
                 # If a runtime Sampler is desired without generating a new
                 # session, the Sampler itself must be passed in as backend. We
                 # can't instantiate a runtime Sampler without a service object.
-                ibm_provider = IBMProvider()
-                ibm_backend = ibm_provider.get_backend(name=backend.name)
-                sampler = BackendSampler(ibm_backend)
+                raise ValueError('Qiskit Runtime Backend %s supplied without '
+                                 'corresponding Qiskit Runtime Service object.'
+                                 'Please resubmit as a Runtime Sampler or'
+                                 'include a Service' % repr(backend)
         except NameError:
             # qiskit_ibm_runtime isn't installed; continue on to abort
             pass
