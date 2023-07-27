@@ -3,6 +3,8 @@
 # the variables in an NchooseK environment      #
 #################################################
 
+# TODO Add session stuff! PULLLLLLLLLL
+
 import datetime
 import qiskit
 import random
@@ -140,6 +142,11 @@ def solve(env, backend=None, hard_scale=None, optimizer=COBYLA(),
     ret.variables = env.ports()
     ret.solutions = []
     vars = result.variables
+    # TODO Look here; try to find an easy way to evaluate 'energy' for each of
+    # these things.
+    # TODO I think that the function returned by the circuit_gen should work for
+    # this, but the order could be all wrong for this version. Have to make a
+    # different version?
     for samp in result.samples:
         ret.solutions.append({vars[i].name: x != 0
                               for i, x in enumerate(samp.x)
@@ -155,6 +162,10 @@ def solve(env, backend=None, hard_scale=None, optimizer=COBYLA(),
     ret.num_samples = final_shots   # Number actually returned to the caller
     ret.num_jobs = num_jobs
     ret.tallies = [round(s.probability*ret.final_shots) for s in ret.samples]
+    # TODO rearrange by 'energy' instead of tallies
+    ret.tallies, ret.solutions = (list(x) for x in zip(*sorted(zip(ret.tallies, ret.solutions), key=lambda pair: pair[0])))
+    ret.tallies.reverse()
+    ret.solutions.reverse()
     try:
         ret.qubits = max([c.num_qubits for c in sampler.transpiled_circuits])
         ret.depth = max([c.depth() for c in sampler.transpiled_circuits])
