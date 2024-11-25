@@ -3,12 +3,12 @@ import random
 
 import numpy as np
 import qiskit
+import qiskit_aer as Aer
 import scipy.optimize
-from qiskit import Aer
 
 # from qiskit.algorithms.optimizers import COBYLA
 from qiskit.primitives import BackendSampler, BaseSampler
-from qiskit.providers import Backend
+from qiskit.providers import Backend, Provider
 
 from nchoosek import solver
 
@@ -71,7 +71,7 @@ def _construct_backendsampler(backend, tags):
     elif isinstance(backend, str):
         # If a string was provided, use it as a backend name for the
         # default IBM provider.
-        ibm_provider = IBMProvider()
+        ibm_provider = Provider()
         ibm_backend = ibm_provider.get_backend(name=backend)
         sampler = BackendSampler(ibm_backend)
     elif backend is None:
