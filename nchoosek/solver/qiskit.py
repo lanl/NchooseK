@@ -6,12 +6,11 @@
 # TODO Add session stuff! PULLLLLLLLLL
 
 import datetime
-import qiskit
 import random
 from qiskit import Aer
 from qiskit.algorithms.minimum_eigensolvers import QAOA
 from qiskit.algorithms.optimizers import COBYLA
-from qiskit.primitives import BaseSampler, Sampler, BackendSampler
+from qiskit.primitives import BaseSampler, BackendSampler
 from qiskit.providers import Backend
 from qiskit_ibm_provider import IBMProvider
 from qiskit_optimization import QuadraticProgram
