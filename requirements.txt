@@ -1,3 +1,7 @@
-z3-solver>=4.8,<5.0,
-qiskit>=1.2.4,<=2.0,
+z3-solver==4.13.3
+qiskit[visualization]==1.2.4,
 dwave-ocean-sdk>=8.0.1,<=9.0,
+
+qiskit-aer==0.15.1 #aer simulators moved to standalone package with qiskit 1.x
+qiskit-optimization==0.6.1 # now holds optimization algorithms
+qiskit-algorithms==0.3.1

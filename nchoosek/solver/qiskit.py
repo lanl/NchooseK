@@ -181,7 +181,8 @@ def solve(
     ret.num_jobs = num_jobs
     ret.tallies = [round(s.probability * ret.final_shots) for s in ret.samples]
 
-    # remove solutions that are not minimum energy, still accessible via ret.samples
+    # remove solutions that are not minimum energy, dwave and z3 only return lowest energy anyways
+    # all solutions still accessible via ret.samples
     for i in range(len(ret.solutions) - 1, -1, -1):
         if ret.fvals[i] > min_energy:
             del ret.fvals[i]
