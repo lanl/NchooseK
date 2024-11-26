@@ -82,7 +82,8 @@ def _construct_backendsampler(backend, tags):
         sampler = BackendSampler(ibm_backend)
     elif backend is None:
         # If nothing was provided, sample from a local simulator.
-        sampler = BackendSampler(Aer.get_backend("aer_simulator"))
+        # sampler = BackendSampler(Aer.get_backend("aer_simulator"))
+        sampler = BackendSampler(Aer.AerSimulator())
     else:
         # If none of the above were provided, abort.
         raise ValueError(
@@ -150,25 +151,26 @@ def solve(
     result = alg.solve(prog)
 
     stime2 = datetime.datetime.now()
+
+    # prepare result object
     ret = QiskitResult()
     ret.variables = env.ports()
     ret.solutions = []
     vars = result.variables
-    # TODO Look here; try to find an easy way to evaluate 'energy' for each of
-    # these things.
-    # TODO I think that the function returned by the circuit_gen should work for
-    # this, but the order could be all wrong for this version. Have to make a
-    # different version?
-    for samp in result.samples:
-        ret.solutions.append(
-            {
-                vars[i].name: x != 0
-                for i, x in enumerate(samp.x)
-                if vars[i].name in env.ports()
-            }
-        )
+    min_energy = result.fval
+
+    # convert Qiskit's result to NchooseK's result
+    ret.solutions = [
+        {
+            vars[i].name: x != 0
+            for i, x in enumerate(samp.x)
+            if vars[i].name in env.ports()
+        }
+        for samp in result.samples
+    ]
 
     # Record this time now to ensure that the QAOA is done running first.
+    ret.fvals = [s.fval for s in result.samples]
     ret.qubo_times = (qtime1, qtime2)
     ret.solver_times = (stime1, stime2)
     ret.sampler = sampler
@@ -178,13 +180,26 @@ def solve(
     ret.num_samples = final_shots  # Number actually returned to the caller
     ret.num_jobs = num_jobs
     ret.tallies = [round(s.probability * ret.final_shots) for s in ret.samples]
-    # TODO rearrange by 'energy' instead of tallies
-    ret.tallies, ret.solutions = (
+
+    # remove solutions that are not minimum energy, still accessible via ret.samples
+    for i in range(len(ret.solutions) - 1, -1, -1):
+        if ret.fvals[i] > min_energy:
+            del ret.fvals[i]
+            del ret.tallies[i]
+            del ret.solutions[i]
+
+    # sort solutions by tallies (ie probability)
+    ret.fvals, ret.tallies, ret.solutions = (
         list(x)
-        for x in zip(*sorted(zip(ret.tallies, ret.solutions), key=lambda pair: pair[0]))
+        for x in zip(
+            *sorted(
+                zip(ret.fvals, ret.tallies, ret.solutions),
+                key=lambda pair: pair[1],
+                reverse=False,
+            )
+        )
     )
-    ret.tallies.reverse()
-    ret.solutions.reverse()
+
     try:
         ret.qubits = max([c.num_qubits for c in sampler.transpiled_circuits])
         ret.depth = max([c.depth() for c in sampler.transpiled_circuits])
