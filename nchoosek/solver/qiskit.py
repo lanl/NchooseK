@@ -196,12 +196,13 @@ def solve(
     ret.num_samples = final_shots  # Number actually returned to the caller
     ret.num_jobs = num_jobs
     ret.tallies = [round(s.probability * ret.final_shots) for s in ret.samples]
+    ret.energies = [s.fval for s in ret.samples]
     # sort solutions by tallies (ie probability)
-    ret.fvals, ret.tallies, ret.solutions = (
+    ret.energies, ret.tallies, ret.solutions = (
         list(x)
         for x in zip(
             *sorted(
-                zip(ret.fvals, ret.tallies, ret.solutions),
+                zip(ret.energies, ret.tallies, ret.solutions),
                 key=lambda pair: pair[1],
                 reverse=False,
             )
