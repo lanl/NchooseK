@@ -2,3 +2,7 @@ __pycache__/
 build/
 dist/
 nchoosek.egg-info/
+
+.env
+.vscode/
+.DS_Store
