@@ -6,13 +6,12 @@
 import datetime
 import random
 
-import qiskit_aer as Aer
 from qiskit.primitives import BackendSampler, BaseSampler
-
-# from qiskit_ibm_provider import IBMProvider
-from qiskit.providers import Backend, Provider
+from qiskit.providers import Backend
+from qiskit_aer import AerSimulator
 from qiskit_algorithms.minimum_eigensolvers import QAOA
 from qiskit_algorithms.optimizers import COBYLA
+from qiskit_ibm_runtime import QiskitRuntimeService
 from qiskit_optimization import QuadraticProgram
 from qiskit_optimization.algorithms import MinimumEigenOptimizer
 
@@ -63,9 +62,19 @@ class QiskitResult(solver.Result):
             return backend.configuration().backend_name
 
 
-def _construct_backendsampler(backend, tags):
+def _construct_backendsampler(backend, tags, instance="ibm-q/open/main"):
     """Construct a BackendSampler called sampler from the given backend
-    parameter, which can be a Sampler, a Backend, a string, or None."""
+    parameter, which can be a Sampler, a Backend, a string, or None.
+    If backend is a string, a specific instance can also be specified."""
+
+    """
+    Args:
+        backend: A backend parameter that can be a Sampler, a Backend, a string, or None.
+        instance: An ibm instance string in form of hub/group/project
+
+    Returns:
+        _type_: _description_
+    """
     # Create a sampler from the backend (which actually is allowed to
     # be a sampler).
     if isinstance(backend, BaseSampler):
@@ -77,13 +86,20 @@ def _construct_backendsampler(backend, tags):
     elif isinstance(backend, str):
         # If a string was provided, use it as a backend name for the
         # default IBM provider.
-        ibm_provider = Provider()
-        ibm_backend = ibm_provider.get_backend(name=backend)
+        service = QiskitRuntimeService(
+            # will use default configured QiskitRuntime credientials,
+            channel="ibm_quantum",
+            instance=instance,
+        )
+        ibm_backend = service.backend(
+            # will throw error if backend is not available to instance
+            name=backend,
+            instance=instance,
+        )
         sampler = BackendSampler(ibm_backend)
     elif backend is None:
         # If nothing was provided, sample from a local simulator.
-        # sampler = BackendSampler(Aer.get_backend("aer_simulator"))
-        sampler = BackendSampler(Aer.AerSimulator())
+        sampler = BackendSampler(AerSimulator())
     else:
         # If none of the above were provided, abort.
         raise ValueError(
@@ -99,6 +115,7 @@ def _construct_backendsampler(backend, tags):
 def solve(
     env,
     backend=None,
+    instance=None,
     hard_scale=None,
     optimizer=COBYLA(),
     reps=1,
@@ -109,7 +126,7 @@ def solve(
     # Acquire a BackendSampler from the backend parameter and a list
     # of job tags.
     job_tags = ["NchooseK", "nchoosek-%010x" % random.randrange(16**10)]
-    sampler = _construct_backendsampler(backend, job_tags)
+    sampler = _construct_backendsampler(backend, job_tags, instance)
 
     # Convert the environment to a QUBO.
     qtime1 = datetime.datetime.now()
@@ -154,10 +171,10 @@ def solve(
 
     # prepare result object
     ret = QiskitResult()
+    ret.circuit = qaoa.ansatz  # NOTE: this circuit could be decomposed (ie circuit.decompose) to get to qiskit_extra.py
     ret.variables = env.ports()
     ret.solutions = []
     vars = result.variables
-    min_energy = result.fval
 
     # convert Qiskit's result to NchooseK's result
     ret.solutions = [
@@ -170,7 +187,6 @@ def solve(
     ]
 
     # Record this time now to ensure that the QAOA is done running first.
-    ret.fvals = [s.fval for s in result.samples]
     ret.qubo_times = (qtime1, qtime2)
     ret.solver_times = (stime1, stime2)
     ret.sampler = sampler
@@ -180,15 +196,6 @@ def solve(
     ret.num_samples = final_shots  # Number actually returned to the caller
     ret.num_jobs = num_jobs
     ret.tallies = [round(s.probability * ret.final_shots) for s in ret.samples]
-
-    # remove solutions that are not minimum energy, dwave and z3 only return lowest energy anyways
-    # all solutions still accessible via ret.samples
-    for i in range(len(ret.solutions) - 1, -1, -1):
-        if ret.fvals[i] > min_energy:
-            del ret.fvals[i]
-            del ret.tallies[i]
-            del ret.solutions[i]
-
     # sort solutions by tallies (ie probability)
     ret.fvals, ret.tallies, ret.solutions = (
         list(x)
