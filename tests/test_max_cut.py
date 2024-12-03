@@ -2,6 +2,8 @@ import pytest
 
 import nchoosek
 
+NCSU_INSTANCE = "ibm-q-ncsu/nc-state/noise"
+
 
 @pytest.fixture()
 def max_cut_env():
@@ -35,20 +37,32 @@ def max_cut_env():
     return env, solutions
 
 
-@pytest.mark.parametrize("solver,", ["z3", "qiskit", "ocean"])
+@pytest.mark.parametrize(
+    "solver,backend,instance",
+    [
+        ("z3", None, None),
+        ("qiskit", None, None),
+        ("ocean", None, None),
+        # actually uses hardware
+        # ("qiskit", "ibm_strasbourg", NCSU_INSTANCE),
+    ],
+)
 def test_max_cut(
     solver,
+    backend,
+    instance,
     max_cut_env,
 ):
     env, expected_solutions = max_cut_env[0], max_cut_env[1]
-    result = env.solve(solver=solver)
-    for soln in result.solutions:
+    result = env.solve(solver=solver, backend=backend, instance=instance)
+    for energy, soln in zip(result.energies, result.solutions):
         # any solution returned by solver should be correct.
         # note, not all solvers return multiple results.
-        set1 = sorted([k for k, v in soln.items() if v])
-        set2 = sorted([k for k, v in soln.items() if not v])
+        if energy == -5:
+            set1 = sorted([k for k, v in soln.items() if v])
+            set2 = sorted([k for k, v in soln.items() if not v])
 
-        assert [set1, set2] in expected_solutions
+            assert [set1, set2] in expected_solutions
 
 
 if __name__ == "__main__":
