@@ -11,7 +11,7 @@ from qiskit.providers import Backend
 from qiskit_aer import AerSimulator
 from qiskit_algorithms.minimum_eigensolvers import QAOA
 from qiskit_algorithms.optimizers import COBYLA
-from qiskit_ibm_runtime import QiskitRuntimeService
+from qiskit_ibm_runtime import IBMBackend, QiskitRuntimeService
 from qiskit_optimization import QuadraticProgram
 from qiskit_optimization.algorithms import MinimumEigenOptimizer
 
@@ -87,7 +87,7 @@ class QiskitResult(solver.Result):
 
     def __repr__(self):
         ret = self._repr_dict()
-        ret["Qiskit backend"] = self.quantum_instance.backend
+        ret["Qiskit backend"] = self._get_backend_name()
         if self.jobIDs:
             ret["number of jobs"] = len(self.jobIDs)
         if self.depth:
@@ -105,20 +105,28 @@ class QiskitResult(solver.Result):
         ret["job tags"] = self.job_tags
         return str(ret)
 
+    def _get_backend_name(self):
+        "Return the name of the backend or None if not available."
+        try:
+            if isinstance(self.sampler, BackendSampler):
+                backend = self.sampler.backend
+            else:
+                # This doesn't give us the backend itself, just the string.
+                return self.sampler.session.backend()
+        except AttributeError:
+            # No backend
+            return None
+        if isinstance(backend.name, str):
+            # BackendV2
+            return backend.name
+        else:
+            # BackendV1
+            return backend.configuration().backend_name
 
-def _construct_backendsampler(backend, tags, instance="ibm-q/open/main"):
+
+def _construct_backendsampler(backend, tags, instance=None):
     """Construct a BackendSampler called sampler from the given backend
-    parameter, which can be a Sampler, a Backend, a string, or None.
-    If backend is a string, a specific instance can also be specified."""
-
-    """
-    Args:
-        backend: A backend parameter that can be a Sampler, a Backend, a string, or None.
-        instance: An ibm instance string in form of hub/group/project
-
-    Returns:
-        _type_: _description_
-    """
+    parameter, which can be a Sampler, a Backend, a string, or None."""
     # Create a sampler from the backend (which actually is allowed to
     # be a sampler).
     if isinstance(backend, BaseSampler):
@@ -145,6 +153,20 @@ def _construct_backendsampler(backend, tags, instance="ibm-q/open/main"):
         # If nothing was provided, sample from a local simulator.
         sampler = BackendSampler(AerSimulator())
     else:
+        try:
+            if isinstance(backend, IBMBackend):
+                # If a runtime Sampler is desired without generating a new
+                # session, the Sampler itself must be passed in as backend. We
+                # can't instantiate a runtime Sampler without a service object.
+                raise ValueError(
+                    "Qiskit Runtime Backend %s supplied without "
+                    "corresponding Qiskit Runtime Service object."
+                    "Please resubmit as a Runtime Sampler or"
+                    "include a Service" % repr(backend)
+                )
+        except NameError:
+            # qiskit_ibm_runtime isn't installed; continue on to abort
+            pass
         # If none of the above were provided, abort.
         raise ValueError(
             "failed to recognize %s" " as a Qiskit Backend or Sampler" % repr(backend)
