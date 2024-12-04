@@ -3,90 +3,12 @@ import random
 
 import numpy as np
 import qiskit
-import qiskit_aer as Aer
 import scipy.optimize
 
-# from qiskit.algorithms.optimizers import COBYLA
-from qiskit.primitives import BackendSampler, BaseSampler
-from qiskit.providers import Backend, Provider
-
 from nchoosek import solver
+from nchoosek.solver.qiskit import QiskitResult, _construct_backendsampler
 
-
-class QiskitResult(solver.Result):
-    "Add Qiskit-specific fields to a Result."
-
-    def __repr__(self):
-        ret = self._repr_dict()
-        try:
-            ret["Qiskit backend"] = self.sampler.backend
-        except AttributeError:
-            ret["Qiskit backend"] = "unknown %s backend" % repr(self.sampler)
-        ret["circuit depth"] = self.depth
-        ret["total number of shots"] = self.total_shots
-        ret["final number of shots"] = self.final_shots
-        ret["number of jobs"] = self.num_jobs
-        # ret["samples"] = self.samples
-        ret["job tags"] = self.job_tags
-        ret["tallies"] = self.tallies
-        return "nchoosek.solver.Result(%s)" % str(ret)
-
-    def __str__(self):
-        ret = self._str_dict()
-        ret["Qiskit backend"] = self._get_backend_name() or "[unknown]"
-        ret["circuit depth"] = self.depth
-        ret["total number of shots"] = self.total_shots
-        ret["final number of shots"] = self.final_shots
-        ret["number of jobs"] = self.num_jobs
-        # ret["number of unique samples"] = len(self.samples)
-        ret["job tags"] = self.job_tags
-        return str(ret)
-
-    def _get_backend_name(self):
-        "Return the name of the backend or None if not available."
-        try:
-            backend = self.sampler.backend
-        except AttributeError:
-            # No backend
-            return None
-        if isinstance(backend.name, str):
-            # BackendV2
-            return backend.name
-        else:
-            # BackendV1
-            return backend.configuration().backend_name
-
-
-def _construct_backendsampler(backend, tags):
-    """Construct a BackendSampler called sampler from the given backend
-    parameter, which can be a Sampler, a Backend, a string, or None."""
-    # Create a sampler from the backend (which actually is allowed to
-    # be a sampler).
-    if isinstance(backend, BaseSampler):
-        # If a Sampler was provided, use it.
-        sampler = backend
-    elif isinstance(backend, Backend):
-        # If a Backend was provided, wrap it in a Sampler.
-        sampler = BackendSampler(backend)
-    elif isinstance(backend, str):
-        # If a string was provided, use it as a backend name for the
-        # default IBM provider.
-        ibm_provider = Provider()
-        ibm_backend = ibm_provider.get_backend(name=backend)
-        sampler = BackendSampler(ibm_backend)
-    elif backend is None:
-        # If nothing was provided, sample from a local simulator.
-        sampler = BackendSampler(Aer.get_backend("aer_simulator"))
-    else:
-        # If none of the above were provided, abort.
-        raise ValueError(
-            "failed to recognize %s" " as a Qiskit Backend or Sampler" % repr(backend)
-        )
-
-    # Specify job tags unless the caller already specified them.
-    if "job_tags" not in sampler.options:
-        sampler.set_options(job_tags=tags)
-    return sampler
+# from qiskit.algorithms.optimizers import COBYLA
 
 
 def circuit_gen(env, quantum_instance=None):
@@ -149,12 +71,12 @@ def circuit_gen(env, quantum_instance=None):
         a = vardict[con[0]]
         b = vardict[con[1]]
         if a == b:
-            qc.rz(-alpha * isin[con], a)
+            qc.rz(-alpha * 2.0 * isin[con], a)
         else:
-            qc.rzz(alpha * isin[con], a, b)
+            qc.rzz(alpha * 2.0 * isin[con], a, b)
 
     # Universal mixer and measurement
-    qc.rx(beta, range(siz))
+    qc.rx(2.0 * beta, range(siz))
     for p in range(siz):
         qc.measure(p, p)
 
