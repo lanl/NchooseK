@@ -22,18 +22,76 @@ from nchoosek.solver import construct_qubo
 class QiskitResult(solver.Result):
     "Add Qiskit-specific fields to a Result."
 
+    def __init__(self):
+        super().__init__()
+        self.quantum_instance = None
+        self._jobIDs = None
+        self._qubits = None
+        self._depth = None
+        self._computed_expensive = False
+
+    def _compute_expensive_values(self):
+        "Provide various values that require nontrivial time to compute."
+        try:
+            device = self.quantum_instance.backend
+            jobs = device.jobs(
+                limit=50,
+                start_datetime=self.solver_times[0],
+                end_datetime=self.solver_times[1],
+            )
+            # Qiskit jobs don't tell you how many physical qubits get used;
+            # we need to tally these ourself.
+            jnum = len(jobs) // 2  # Representative job (last should be avoided)
+            circ = jobs[jnum].circuits()[0]  # 1st circuit of a representative job
+            self._qubits = len(
+                {q for d in circ.data if d[0].name != "barrier" for q in d[1]}
+            )
+            self._jobIDs = []
+            for job in jobs:
+                self._jobIDs.append(job.job_id())
+            self._depth = circ.depth()
+        except AttributeError:
+            # Qiskit's local simulator lacks a jobs field.
+            pass
+        self._computed_expensive = True
+
+    @property
+    def qubits(self):
+        "Return the number of physical qubits used."
+        if not self._computed_expensive:
+            self._compute_expensive_values()
+        return self._qubits
+
+    @qubits.setter
+    def qubits(self, value):
+        # This function exists so the base class can write "qubits = None".
+        self._qubits = value
+
+    @property
+    def jobIDs(self):
+        "Return a list of job IDs."
+        if not self._computed_expensive:
+            self._compute_expensive_values()
+        return self._jobIDs
+
+    @property
+    def depth(self):
+        "Return the circuit depth."
+        if not self._computed_expensive:
+            self._compute_expensive_values()
+        return self._depth
+
+    @depth.setter
+    def depth(self, value):
+        self._depth = value
+
     def __repr__(self):
         ret = self._repr_dict()
-        try:
-            ret["Qiskit backend"] = self.sampler.backend
-        except AttributeError:
-            ret["Qiskit backend"] = "unknown %s backend" % repr(self.sampler)
-        ret["circuit depth"] = self.depth
-        ret["total number of shots"] = self.total_shots
-        ret["final number of shots"] = self.final_shots
-        ret["number of jobs"] = self.num_jobs
-        ret["samples"] = self.samples
-        ret["job tags"] = self.job_tags
+        ret["Qiskit backend"] = self.quantum_instance.backend
+        if self.jobIDs:
+            ret["number of jobs"] = len(self.jobIDs)
+        if self.depth:
+            ret["circuit depth"] = self.depth
         return "nchoosek.solver.Result(%s)" % str(ret)
 
     def __str__(self):
@@ -46,20 +104,6 @@ class QiskitResult(solver.Result):
         ret["number of unique samples"] = len(self.samples)
         ret["job tags"] = self.job_tags
         return str(ret)
-
-    def _get_backend_name(self):
-        "Return the name of the backend or None if not available."
-        try:
-            backend = self.sampler.backend
-        except AttributeError:
-            # No backend
-            return None
-        if isinstance(backend.name, str):
-            # BackendV2
-            return backend.name
-        else:
-            # BackendV1
-            return backend.configuration().backend_name
 
 
 def _construct_backendsampler(backend, tags, instance="ibm-q/open/main"):
@@ -212,7 +256,8 @@ def solve(
     try:
         ret.qubits = max([c.num_qubits for c in sampler.transpiled_circuits])
         ret.depth = max([c.depth() for c in sampler.transpiled_circuits])
-    except AttributeError:
+    except AttributeError as e:
+        e
         ret.qubits = max([c.num_qubits for c in sampler.circuits])
         ret.depth = max([c.depth() for c in sampler.circuits])
     ret.job_tags = job_tags
