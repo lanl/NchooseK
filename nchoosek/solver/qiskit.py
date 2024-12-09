@@ -124,7 +124,7 @@ class QiskitResult(solver.Result):
             return backend.configuration().backend_name
 
 
-def _construct_backendsampler(backend, tags, instance=None):
+def _construct_backendsampler(backend, tags, instance):
     """Construct a BackendSampler called sampler from the given backend
     parameter, which can be a Sampler, a Backend, a string, or None."""
     # Create a sampler from the backend (which actually is allowed to
@@ -138,9 +138,10 @@ def _construct_backendsampler(backend, tags, instance=None):
     elif isinstance(backend, str):
         # If a string was provided, use it as a backend name for the
         # default IBM provider.
+        channel = "local" if instance is None else "ibm_quantum"
         service = QiskitRuntimeService(
             # will use default configured QiskitRuntime credientials,
-            channel="ibm_quantum",
+            channel=channel,
             instance=instance,
         )
         ibm_backend = service.backend(
