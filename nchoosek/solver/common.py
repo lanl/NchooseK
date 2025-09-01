@@ -6,6 +6,7 @@
 from collections import defaultdict
 
 
+
 class ConstraintConversionError(Exception):
     'A constraint could not be converted to a QUBO.'
 
@@ -126,3 +127,4 @@ class Result():
     def __str__(self):
         ret = self._str_dict()
         return str(ret)
+
